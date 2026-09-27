@@ -1,0 +1,30 @@
+{
+  "name": "rookery",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An engine for creating, sharing, and playing chess variants.",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && node scripts/prepare-standalone.mjs",
+    "start": "node .next/standalone/server.js",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build"
+  },
+  "dependencies": {
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.6",
+    "typescript": "^5.9.3"
+  }
+}
