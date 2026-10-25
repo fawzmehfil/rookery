@@ -66,7 +66,7 @@ export default function Home() {
       <section className="hero" id="top">
         <div className="hero-copy" id="content">
           <p className="eyebrow"><span /> A chess variant workshop</p>
-          <h1>Make the rules.<br /><em>Change the game.</em></h1>
+          <h1><span className="headline-phrase">Make the</span> rules.<br /><em>Change the game.</em></h1>
           <p className="hero-intro">
             Rookery is a place to create unusual boards, teach new pieces how to move,
             and turn a wild idea into a game anyone can play.

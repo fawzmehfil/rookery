@@ -178,6 +178,10 @@ nav a:hover,
   text-transform: none;
 }
 
+.headline-phrase {
+  white-space: nowrap;
+}
+
 .hero-intro {
   max-width: 570px;
   margin: 0;
@@ -756,7 +760,7 @@ footer > span:last-child {
   }
 
   .hero h1 {
-    font-size: clamp(3.4rem, 17vw, 5.5rem);
+    font-size: clamp(3rem, 13vw, 4.75rem);
   }
 
   .workbench-body {
