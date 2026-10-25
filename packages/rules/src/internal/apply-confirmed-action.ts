@@ -1,4 +1,5 @@
 import { coordinateKey, freezeCoordinate, isOnBoard } from "../create-initial-state";
+import { evaluateOutcome } from "../evaluate-outcome";
 import type {
   ApplyActionResult,
   EngineError,
@@ -120,14 +121,27 @@ export function applyConfirmedAction(
     );
   }
 
-  events.push(
-    Object.freeze({
-      type: "turn-changed",
-      ply: nextPly,
-      fromPlayerId: state.activePlayerId,
-      toPlayerId: nextPlayerId,
-    }),
-  );
+  const positionAfterMove: GameState = {
+    variantId: state.variantId,
+    ply: nextPly,
+    activePlayerId: nextPlayerId,
+    pieces,
+    outcome: null,
+  };
+  const outcome = evaluateOutcome(variant, positionAfterMove);
+
+  if (outcome) {
+    events.push(Object.freeze({ type: "game-ended", ply: nextPly, outcome }));
+  } else {
+    events.push(
+      Object.freeze({
+        type: "turn-changed",
+        ply: nextPly,
+        fromPlayerId: state.activePlayerId,
+        toPlayerId: nextPlayerId,
+      }),
+    );
+  }
 
   return {
     ok: true,
@@ -135,9 +149,9 @@ export function applyConfirmedAction(
       state: Object.freeze({
         variantId: state.variantId,
         ply: nextPly,
-        activePlayerId: nextPlayerId,
+        activePlayerId: outcome ? null : nextPlayerId,
         pieces,
-        outcome: null,
+        outcome,
       }),
       events: Object.freeze(events),
     }),
