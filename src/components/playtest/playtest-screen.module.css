@@ -1,0 +1,238 @@
+.screen {
+  --playtest-bg: #15120f;
+  --playtest-panel: #1d1914;
+  --playtest-line: rgba(237, 222, 196, 0.12);
+  --playtest-text: #efe6d6;
+  --playtest-muted: #a99b86;
+  --playtest-accent: #c98b4c;
+  --playtest-move: #4fd1b5;
+  --playtest-error: #ff5f4a;
+
+  display: grid;
+  gap: 1.25rem;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border-radius: 10px;
+  background: var(--playtest-bg);
+  color: var(--playtest-text);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--playtest-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  line-height: 1.1;
+}
+
+.facts {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.facts > div {
+  min-width: 6rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--playtest-line);
+  border-radius: 6px;
+  background: var(--playtest-panel);
+}
+
+.facts dt {
+  color: var(--playtest-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.facts dd {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* The side to move is spelled out and marked with a swatch, not shown by colour alone. */
+.side[data-side]::before {
+  content: "";
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.4em;
+  border: 2px solid var(--playtest-text);
+  border-radius: 50%;
+}
+
+.side[data-side="white"]::before {
+  background: #f3eadb;
+}
+
+.side[data-side="black"]::before {
+  background: #2a211b;
+}
+
+/* The board column is capped by the viewport height so the whole board stays on screen. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, calc(100dvh - 12rem)) minmax(240px, 320px);
+  justify-content: start;
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.boardColumn {
+  position: relative;
+  min-width: min(100%, 320px);
+}
+
+.panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.status {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--playtest-line);
+  border-left: 4px solid var(--playtest-move);
+  border-radius: 6px;
+  background: var(--playtest-panel);
+  font-weight: 700;
+}
+
+.status[data-over] {
+  border-left-color: var(--playtest-accent);
+  color: var(--playtest-accent);
+}
+
+.error {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--playtest-error);
+  border-radius: 6px;
+  background: rgba(255, 95, 74, 0.14);
+}
+
+.error::before {
+  content: "✕ ";
+  font-weight: 800;
+}
+
+.heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.empty {
+  margin: 0;
+  color: var(--playtest-muted);
+  font-size: 0.85rem;
+}
+
+.log {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 14rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.turn {
+  color: var(--playtest-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.button {
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 1px solid var(--playtest-line);
+  border-radius: 6px;
+  background: var(--playtest-panel);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--playtest-accent);
+}
+
+.button:focus-visible,
+.promotion button:focus-visible {
+  outline: 2px solid var(--playtest-accent);
+  outline-offset: 2px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--playtest-muted);
+  font-size: 0.78rem;
+}
+
+.promotion {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(14, 12, 10, 0.72);
+}
+
+.promotion p {
+  width: 100%;
+  margin: 0;
+  font-weight: 700;
+  text-align: center;
+}
+
+.promotion button {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  min-width: 4.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--playtest-line);
+  border-radius: 6px;
+  background: var(--playtest-panel);
+  color: inherit;
+  font: inherit;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.promotion svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
