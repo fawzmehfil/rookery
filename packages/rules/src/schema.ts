@@ -80,7 +80,7 @@ export const boardDefinitionSchema = z
   .object({
     files: z.int().min(1).max(MAX_BOARD_AXIS),
     ranks: z.int().min(1).max(MAX_BOARD_AXIS),
-    disabledCells: z.array(coordinateSchema).max(MAX_BOARD_CELLS),
+    disabledCells: z.array(coordinateSchema).max(MAX_BOARD_CELLS).default([]),
   })
   .strict();
 
@@ -96,7 +96,7 @@ export const pieceTypeDefinitionSchema = z
   .object({
     id: identifierSchema,
     name: z.string().trim().min(1).max(80),
-    royal: z.boolean(),
+    royal: z.boolean().default(false),
     movements: z.array(movementPatternSchema).min(1).max(64),
   })
   .strict();

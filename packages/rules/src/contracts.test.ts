@@ -80,6 +80,31 @@ describe("variant contracts", () => {
     expect(result).toEqual({ ok: true, value: validVariant });
   });
 
+  it("normalizes optional board and piece fields", () => {
+    const input = {
+      ...validVariant,
+      board: {
+        files: validVariant.board.files,
+        ranks: validVariant.board.ranks,
+      },
+      pieceTypes: [
+        {
+          id: validVariant.pieceTypes[0].id,
+          name: validVariant.pieceTypes[0].name,
+          movements: validVariant.pieceTypes[0].movements,
+        },
+      ],
+    };
+
+    const result = parseVariantDefinition(input);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.board.disabledCells).toEqual([]);
+    expect(result.value.pieceTypes[0]?.royal).toBe(false);
+  });
+
   it("exports the complete engine interface", () => {
     expectTypeOf<RulesEngine>().toHaveProperty("createInitialState");
     expectTypeOf<RulesEngine>().toHaveProperty("getLegalActions");
