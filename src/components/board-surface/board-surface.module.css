@@ -181,26 +181,29 @@
   transition: translate 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Sized against the square itself; percentage padding would resolve against the whole board. */
+/*
+ * Sized against the square itself; percentage padding would resolve against the whole board.
+ * Fallbacks let PieceArt render outside a board too, e.g. in a promotion picker.
+ */
 .art {
   width: 88%;
   height: 88%;
   overflow: visible;
-  stroke: var(--board-ink);
+  stroke: var(--board-ink, #120e0b);
   stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .artWhite {
-  fill: var(--board-piece-white);
+  fill: var(--board-piece-white, #f3eadb);
   filter: drop-shadow(0 2px 1.5px rgba(0, 0, 0, 0.35));
 }
 
 /* A thin accent rim keeps dark pieces visible on dark squares. */
 .artBlack {
-  fill: var(--board-piece-black);
-  filter: drop-shadow(0 0 0.6px var(--board-accent)) drop-shadow(0 2px 1.5px rgba(0, 0, 0, 0.45));
+  fill: var(--board-piece-black, #2a211b);
+  filter: drop-shadow(0 0 0.6px var(--board-accent, #c98b4c)) drop-shadow(0 2px 1.5px rgba(0, 0, 0, 0.45));
 }
 
 .art [data-part="line"] {
@@ -208,17 +211,17 @@
 }
 
 .art [data-part="eye"] {
-  fill: var(--board-ink);
+  fill: var(--board-ink, #120e0b);
   stroke: none;
 }
 
 .artBlack [data-part="line"] {
-  stroke: var(--board-accent);
+  stroke: var(--board-accent, #c98b4c);
   stroke-width: 1.2;
 }
 
 .artBlack [data-part="eye"] {
-  fill: var(--board-accent);
+  fill: var(--board-accent, #c98b4c);
 }
 
 .art [data-part="letter"] {
@@ -231,11 +234,11 @@
 }
 
 .artWhite [data-part="letter"] {
-  fill: var(--board-ink);
+  fill: var(--board-ink, #120e0b);
 }
 
 .artBlack [data-part="letter"] {
-  fill: var(--board-piece-white);
+  fill: var(--board-piece-white, #f3eadb);
 }
 
 @media (prefers-reduced-motion: reduce) {
