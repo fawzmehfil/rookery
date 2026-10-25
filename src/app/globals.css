@@ -1,6 +1,6 @@
 :root {
   --ink: #171714;
-  --paper: #f3f0e8;
+  --paper: #ffffff;
   --acid: #d7ff64;
   --orange: #ff6b35;
   --line: rgba(23, 23, 20, 0.15);
@@ -75,6 +75,27 @@ a {
   background: var(--ink);
   color: var(--acid);
   font-size: 1.15rem;
+}
+
+.header-logo {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: white;
+}
+
+.header-logo img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 165%;
+  height: 165%;
+  max-width: none;
+  object-fit: cover;
+  transform: translate(-50%, -50%);
 }
 
 nav {
@@ -356,6 +377,7 @@ nav a:hover,
   grid-column: 2;
   grid-row: 1;
   grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, minmax(0, 1fr));
   border: 1px solid #161614;
   border-radius: 2px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
@@ -471,21 +493,24 @@ nav a:hover,
 }
 
 .manifesto {
-  display: grid;
-  grid-template-columns: 0.35fr 1fr;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: min(100% - 3rem, 1440px);
   margin: 0 auto;
   padding: 8rem 0;
   border-top: 1px solid var(--line);
+  text-align: center;
 }
 
 .manifesto-copy {
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0;
   font-family: Georgia, serif;
   font-size: clamp(2.3rem, 4.8vw, 5rem);
   letter-spacing: -0.045em;
   line-height: 1.05;
+  text-wrap: balance;
 }
 
 .manifesto-copy span {
@@ -756,8 +781,6 @@ footer > span:last-child {
   }
 
   .manifesto {
-    grid-template-columns: 1fr;
-    gap: 2rem;
     padding: 5rem 0;
   }
 
