@@ -15,7 +15,7 @@
     "start": "node .next/standalone/server.js",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit && npm run typecheck --workspace @rookery/rules",
-    "test": "npm run test --workspace @rookery/rules",
+    "test": "vitest run && npm run test --workspace @rookery/rules",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
@@ -24,11 +24,17 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.1.2",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.3",
-    "typescript": "^5.9.3"
+    "jsdom": "^27.0.1",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
   }
 }
