@@ -4,7 +4,7 @@
   --acid: #d7ff64;
   --orange: #ff6b35;
   --line: rgba(23, 23, 20, 0.15);
-  --display: "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
+  --editorial: Georgia, "Times New Roman", serif;
   --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -163,18 +163,16 @@ nav a:hover,
 .hero h1 {
   max-width: 760px;
   margin: 1.5rem 0 1.8rem;
-  font-family: var(--display);
+  font-family: var(--editorial);
   font-size: clamp(4rem, 7.1vw, 7.6rem);
-  font-stretch: condensed;
-  font-weight: 900;
-  letter-spacing: -0.075em;
-  line-height: 0.81;
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 0.84;
   text-transform: uppercase;
 }
 
 .hero h1 em {
   color: var(--orange);
-  font-family: Georgia, serif;
   font-size: 0.72em;
   font-weight: 400;
   letter-spacing: -0.055em;
@@ -185,7 +183,7 @@ nav a:hover,
   max-width: 570px;
   margin: 0;
   color: #53524d;
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-size: clamp(1rem, 1.25vw, 1.2rem);
   line-height: 1.65;
 }
@@ -343,7 +341,7 @@ nav a:hover,
 
 .board-heading strong {
   color: #f1f0e9;
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-size: 1.05rem;
   font-weight: 400;
 }
@@ -388,7 +386,7 @@ nav a:hover,
   min-width: 0;
   place-items: center;
   color: #171714;
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-size: clamp(1.4rem, 2.5vw, 2.35rem);
   line-height: 1;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
@@ -506,7 +504,7 @@ nav a:hover,
 .manifesto-copy {
   max-width: 1100px;
   margin: 0;
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-size: clamp(2.3rem, 4.8vw, 5rem);
   letter-spacing: -0.045em;
   line-height: 1.05;
@@ -537,11 +535,11 @@ nav a:hover,
 .section-heading h2,
 .closing h2 {
   margin: 0.75rem 0 0;
-  font-family: var(--display);
+  font-family: var(--editorial);
   font-size: clamp(3rem, 6vw, 6rem);
-  font-weight: 900;
-  letter-spacing: -0.065em;
-  line-height: 0.9;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 0.92;
   text-transform: uppercase;
 }
 
@@ -549,7 +547,7 @@ nav a:hover,
   max-width: 410px;
   margin: 0 0 0.6rem;
   color: #99988f;
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   line-height: 1.6;
 }
 
@@ -604,7 +602,7 @@ nav a:hover,
   border-radius: 50%;
   background: var(--orange);
   color: var(--ink);
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-size: 4.7rem;
 }
 
@@ -631,7 +629,7 @@ nav a:hover,
 .symbol-04 {
   background: #f0ede3;
   color: var(--ink);
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-size: 3.4rem;
 }
 
@@ -650,7 +648,7 @@ nav a:hover,
 
 .foundation-grid h3 {
   margin: 0;
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-size: 1.25rem;
   font-weight: 400;
 }
@@ -682,7 +680,7 @@ nav a:hover,
 
 .closing-copy p {
   margin: 0 0 1.8rem;
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-size: 1.2rem;
   line-height: 1.55;
 }
@@ -703,7 +701,7 @@ footer .brand {
 
 footer p {
   margin: 0;
-  font-family: Georgia, serif;
+  font-family: var(--editorial);
   font-style: italic;
 }
 
