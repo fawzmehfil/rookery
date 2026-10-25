@@ -14,7 +14,7 @@
     "build": "next build && node scripts/prepare-standalone.mjs",
     "start": "node .next/standalone/server.js",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit && npm run typecheck --workspace @rookery/rules",
+    "typecheck": "next typegen && tsc --noEmit && npm run typecheck --workspace @rookery/rules",
     "test": "npm run test --workspace @rookery/rules",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
