@@ -58,4 +58,6 @@ export {
   vectorSchema,
 } from "./schema";
 export { coordinateToSquare, squareToCoordinate } from "./coordinates";
+export { createInitialState } from "./create-initial-state";
+export { evaluateOutcome } from "./evaluate-outcome";
 export { parseVariantDefinition } from "./parse";
