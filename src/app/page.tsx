@@ -1,3 +1,6 @@
+import Image from "next/image";
+import rookeryLogo from "../../assets/rookery.png";
+
 const board = [
   ["♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"],
   ["♟", "♟", "♟", "", "♟", "♟", "♟", "♟"],
@@ -43,8 +46,9 @@ export default function Home() {
 
       <header className="site-header">
         <a className="brand" href="#top" aria-label="Rookery home">
-          <span className="brand-mark" aria-hidden="true">♜</span>
-          <span>Rookery</span>
+          <span className="header-logo" aria-hidden="true">
+            <Image src={rookeryLogo} alt="" priority />
+          </span>
         </a>
 
         <nav aria-label="Primary navigation">
@@ -62,7 +66,7 @@ export default function Home() {
       <section className="hero" id="top">
         <div className="hero-copy" id="content">
           <p className="eyebrow"><span /> A chess variant workshop</p>
-          <h1>Make the rules.<br /><em>Change the game.</em></h1>
+          <h1><span className="headline-phrase">Make the</span> rules.<br /><em>Change the game.</em></h1>
           <p className="hero-intro">
             Rookery is a place to create unusual boards, teach new pieces how to move,
             and turn a wild idea into a game anyone can play.
@@ -145,7 +149,6 @@ export default function Home() {
       </section>
 
       <section className="manifesto" id="create">
-        <p className="section-label">From familiar to impossible</p>
         <p className="manifesto-copy">
           Chess is a language. <span>Rookery gives everyone a way to write in it.</span>
         </p>
