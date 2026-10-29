@@ -60,4 +60,5 @@ export {
 export { coordinateToSquare, squareToCoordinate } from "./coordinates";
 export { createInitialState } from "./create-initial-state";
 export { evaluateOutcome } from "./evaluate-outcome";
+export { getLegalActions } from "./get-legal-actions";
 export { parseVariantDefinition } from "./parse";
