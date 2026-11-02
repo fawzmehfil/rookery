@@ -32,7 +32,7 @@ describe("semantic validation", () => {
     ["OVERLAPPING_PIECES", v => { v.setup[1].at = { ...v.setup[0].at }; }, ["setup", 1, "at"]],
     ["INVALID_ROYAL_COUNT", v => { v.setup = v.setup.filter((p: { id: string }) => p.id !== "white-sovereign"); }, ["players", 0]],
     ["NO_CAPTURE_MOVEMENT", v => { v.pieceTypes.forEach((p: { movements: { mode: string }[] }) => p.movements.forEach(m => { m.mode = "move-only"; })); }, ["players", 0]],
-    ["NO_INITIAL_ACTIONS", v => { v.pieceTypes.forEach((p: { movements: unknown[] }) => { p.movements = [{ kind: "leap", frame: "board", mode: "move-or-capture", offsets: [{ fileDelta: 25, rankDelta: 25 }] }]; }); }, ["turnOrder", 0]],
+    ["NO_INITIAL_ACTIONS", v => { v.pieceTypes.forEach((p: { movements: unknown[] }) => { p.movements = [{ kind: "step", frame: "board", mode: "capture-only", offsets: [{ fileDelta: 0, rankDelta: 1 }] }]; }); }, ["turnOrder", 0]],
     ["UNUSED_PIECE_TYPE", v => { v.pieceTypes.push({ ...v.pieceTypes[1], id: "unused" }); }, ["pieceTypes", 3]],
     ["SCHEMA_INVALID", v => { v.pieceTypes[0].movements[0].offsets = [{ fileDelta: 0, rankDelta: 0 }]; }, ["pieceTypes", 0, "movements", 0, "offsets", 0]],
   ];
@@ -53,6 +53,14 @@ describe("semantic validation", () => {
       { code: "PIECE_OUT_OF_BOUNDS", path: ["setup", 0, "at"] },
       { code: "OVERLAPPING_PIECES", path: ["setup", 2, "at"] },
     ]);
+  });
+
+  it("rejects capture vectors that cannot land anywhere on the playable board", () => {
+    const v = draft();
+    v.pieceTypes.forEach((p: { movements: unknown[] }) => {
+      p.movements = [{ kind: "leap", frame: "owner", mode: "move-or-capture", offsets: [{ fileDelta: 25, rankDelta: 25 }] }];
+    });
+    expect(validateVariantDefinition(v).filter(i => i.code === "NO_CAPTURE_MOVEMENT").map(i => i.path)).toEqual([["players", 0], ["players", 1]]);
   });
 
   it.each([null, undefined, 1, "not-json", {}, [], { schemaVersion: 8 }])("reports ordinary invalid input without throwing: %j", input => {

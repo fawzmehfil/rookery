@@ -68,8 +68,8 @@ every user-authored variant.
 
 - Node v22.23.4, Windows 10.0.26200, Intel Core Ultra 9 386H.
 - Lint, app and rules type checks, and production build pass.
-- Ordinary suite: 85 passing tests; one opt-in performance test skipped.
-- Opt-in suite: 86 passing tests. Recorded median 0.008352ms/call.
+- Ordinary suite: 86 passing tests; one opt-in performance test skipped.
+- Opt-in suite: 87 passing tests. Recorded median 0.008352ms/call before the final validator-only refinement.
 - First Flight parses, validates with `[]`, and round trips through JSON.
 - `npm audit`: 16 moderate development-toolchain findings from existing
   minimatch dependencies. No production dependency findings. Not fixed with
@@ -85,6 +85,7 @@ assertions must be connected when Task 03's public implementation is available.
 No new public transition API is introduced here.
 
 Validation checks structural contradictions, objective royal counts, each player's
-capture capability and whether the starting player has legal actions. It does not
+capture capability (including whether any capture vector can land on a playable
+cell anywhere on the board) and whether the starting player has legal actions. It does not
 solve arbitrary future game reachability, guarantee a forced win, or add stalemate
 rules absent from Sprint 1's capture-the-royal contract.

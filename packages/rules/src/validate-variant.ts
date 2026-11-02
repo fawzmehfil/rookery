@@ -68,8 +68,23 @@ export function validateVariantDefinition(input: unknown): readonly ValidationIs
     const owned = v.setup.filter((piece) => piece.ownerId === p.id);
     if (owned.filter((piece) => royalTypes.has(piece.typeId)).length !== 1)
       add("INVALID_ROYAL_COUNT", ["players", i], `${p.name} needs exactly one starting royal for capture-the-royal.`);
-    if (!owned.some((piece) => v.pieceTypes.some((t) => t.id === piece.typeId && t.movements.some((m) => m.mode !== "move-only"))))
-      add("NO_CAPTURE_MOVEMENT", ["players", i], `${p.name} needs a placed piece with capture-capable movement to win.`);
+    const canCaptureOnBoard = (typeId: string) => v.pieceTypes.some(t => t.id === typeId && t.movements.some(m => {
+      if (m.mode === "move-only") return false;
+      const vectors = m.kind === "slide" ? m.directions : m.offsets;
+      // A slide's first step suffices to prove that some capture edge exists.
+      // Ignore occupancy and reachability: reject only geometric impossibility.
+      for (let file = 0; file < v.board.files; file++) for (let rank = 0; rank < v.board.ranks; rank++) {
+        if (disabled.has(coordinateKey({ file, rank }))) continue;
+        if (vectors.some(vector => {
+          const target = { file: file + vector.fileDelta,
+            rank: rank + vector.rankDelta * (m.frame === "owner" ? p.forwardRank : 1) };
+          return onBoard(target) && !disabled.has(coordinateKey(target));
+        })) return true;
+      }
+      return false;
+    }));
+    if (!owned.some(piece => canCaptureOnBoard(piece.typeId)))
+      add("NO_CAPTURE_MOVEMENT", ["players", i], `${p.name} needs a placed piece with capture-capable movement usable on this board to win.`);
   });
   // Avoid cascading engine diagnostics when references or positions are invalid.
   if (!issues.some((i) => i.severity === "error")) {
