@@ -42,6 +42,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The health endpoint is available at [http://localhost:3000/api/health](http://localhost:3000/api/health).
 
+The no-code variant editor is at [http://localhost:3000/editor](http://localhost:3000/editor).
+Start with First Flight, resize the board, place pieces, and configure movement
+rules. Drafts stay in the current tab; download a valid draft before leaving.
+See [editor interactions and integration notes](docs/variant-editor.md) and
+[semantic validation and quality checks](docs/variant-validation.md).
+
 Useful commands:
 
 ```bash

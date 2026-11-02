@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import rookeryLogo from "../../assets/rookery.png";
 
 const board = [
@@ -57,10 +58,10 @@ export default function Home() {
           <a href="https://github.com/fawzmehfil/rookery">GitHub</a>
         </nav>
 
-        <a className="header-action" href="#create">
+        <Link className="header-action" href="/editor">
           Enter the workshop
           <span aria-hidden="true">↗</span>
-        </a>
+        </Link>
       </header>
 
       <section className="hero" id="top">
