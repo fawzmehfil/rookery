@@ -62,3 +62,5 @@ export { createInitialState } from "./create-initial-state";
 export { evaluateOutcome } from "./evaluate-outcome";
 export { getLegalActions } from "./get-legal-actions";
 export { parseVariantDefinition } from "./parse";
+export { validateVariantDefinition } from "./validate-variant";
+export type { ValidationCode, ValidationIssue } from "./validate-variant";
