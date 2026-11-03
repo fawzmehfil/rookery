@@ -76,7 +76,7 @@ export default function Home() {
             <a className="button button-primary" href="#create">See the vision <span>→</span></a>
             <a className="button button-quiet" href="/api/health">System status <span className="status-dot" /></a>
           </div>
-          <p className="build-note">Foundation build · Editor coming next</p>
+          <p className="build-note">Foundation build · Editor available locally</p>
         </div>
 
         <div className="workbench" aria-label="Preview of the Rookery variant editor">

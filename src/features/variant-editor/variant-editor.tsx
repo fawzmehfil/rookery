@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { coordinateToSquare, squareToCoordinate, validateVariantDefinition, type Coordinate, type VariantDefinition } from "@rookery/rules";
 import { firstFlightVariant } from "@rookery/rules/fixtures";
 import { BoardSurface } from "@/components/board-surface";
+import rookeryLogo from "../../../assets/rookery.png";
 import { editorBoardPieces } from "./board-adapter";
 import { MovementForm, movementDescription } from "./movement-form";
 import { movePiece, placePiece, playtestDraft, removeMovement, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, setMovement, type EditResult } from "./model";
@@ -28,7 +30,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   const [pendingResize, setPendingResize] = useState<{ files: number; ranks: number } | null>(null);
   const [cell, setCell] = useState("a1");
   const [message, setMessage] = useState("First Flight is ready to customize. Changes stay in this tab; download a valid draft to keep it.");
-  const issues = validateVariantDefinition(draft);
+  const issues = useMemo(() => validateVariantDefinition(draft), [draft]);
   const blocking = issues.filter(i => i.severity === "error");
   const type = draft.pieceTypes.find(t => t.id === typeId);
   const pattern = type?.movements[Number(ruleIndex)];
@@ -75,14 +77,16 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   return <main className={styles.editor} onKeyDown={e => { if (e.key === "Escape") { setSelected(null); setMessage("Selection cleared."); } }}>
     <a href="#editor-board" className="skip-link">Skip to board</a>
     <header className={styles.header}>
-      <Link href="/" className={styles.brand}>♜ ROOKERY <span>/ workshop</span></Link>
-      <span className={styles.badge}>LOCAL DRAFT</span>
+      <Link href="/" className={styles.brand} aria-label="Rookery home">
+        <Image src={rookeryLogo} alt="" width={42} height={42} priority />
+      </Link>
+      <span className={styles.badge}>Local draft</span>
       <button className={styles.primary} disabled={blocking.length > 0} onClick={handoff}>{onPlaytest ? "Open playtest" : "Download valid draft"} <span aria-hidden="true">↗</span></button>
     </header>
-    <div className={styles.intro}><div><p className={styles.eyebrow}>VARIANT WORKSHOP / 01</p><h1>Make your next move.</h1><p>Shape the board. Give your pieces a new way to play.</p></div><div className={styles.draftName}><strong>{draft.name}</strong><span>Capture the royal · {draft.players.length} players</span></div></div>
+    <div className={styles.intro}><div><p className={styles.eyebrow}>Variant workshop · 01</p><h1>Make your next move.</h1><p>Shape the board. Give your pieces a new way to play.</p></div><div className={styles.draftName}><strong>{draft.name}</strong><span>Capture the royal · {draft.players.length} players</span></div></div>
     <div className={styles.workspace}>
       <section className={styles.panel} aria-labelledby="setup-heading">
-        <p className={styles.eyebrow}>01 / THE CANVAS</p><h2 id="setup-heading">Board & pieces</h2>
+        <p className={styles.eyebrow}>01 · The canvas</p><h2 id="setup-heading">Board & pieces</h2>
         <form onSubmit={e => { e.preventDefault(); requestResize(); }}>
           <div className={styles.fieldRow}>
             <label>Files (columns)<input type="number" min="1" max="26" step="1" required value={files} onChange={e => { setFiles(e.target.value); setPendingResize(null); }} /></label>
@@ -123,7 +127,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
         <p role="status" className={styles.status}>{message}</p>
       </section>
       <section className={styles.panel} aria-labelledby="movement-heading" id="movement-panel">
-        <p className={styles.eyebrow}>02 / THE POSSIBILITIES</p><h2 id="movement-heading">Movement rules</h2>
+        <p className={styles.eyebrow}>02 · Movement</p><h2 id="movement-heading">Movement rules</h2>
         <label>Piece type to edit<select value={typeId} onChange={e => { setTypeId(e.target.value); setRuleIndex("0"); }}>{draft.pieceTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
         <label>Rule to edit<select value={ruleIndex} onChange={e => setRuleIndex(e.target.value)}>{type?.movements.map((m, i) => <option key={i} value={i}>Rule {i + 1} · {m.kind}</option>)}<option value="new">+ New movement rule</option></select></label>
         <MovementForm key={`${typeId}-${ruleIndex}-${JSON.stringify(pattern)}`} initial={pattern} onSave={rule => {
@@ -135,7 +139,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
       </section>
     </div>
     <section className={styles.validation} aria-labelledby="validation-heading">
-      <div><p className={styles.eyebrow}>03 / DRAFT CHECK</p><h2 id="validation-heading">{blocking.length ? `${blocking.length} issue${blocking.length === 1 ? "" : "s"} to resolve` : "Ready for the next move."}</h2><p>Drafts stay editable. Only blocking errors prevent handoff.</p></div>
+      <div><p className={styles.eyebrow}>03 · Draft check</p><h2 id="validation-heading">{blocking.length ? `${blocking.length} issue${blocking.length === 1 ? "" : "s"} to resolve` : "Ready for the next move."}</h2><p>Drafts stay editable. Only blocking errors prevent handoff.</p></div>
       <div aria-live="polite">{issues.length ? <ul>{issues.map((issue, i) => <li key={`${issue.code}-${i}`} className={issue.severity === "error" ? styles.error : ""}><strong>{issue.severity === "error" ? "Error" : "Warning"}</strong> · <a href={issue.path[0] === "pieceTypes" ? "#movement-panel" : "#setup-heading"}>{issue.path.join(".") || "variant"}</a>: {issue.message}</li>)}</ul> : <p className={styles.valid}>✓ Shared schema and semantic checks pass.</p>}</div>
     </section>
     <footer className={styles.footer}>Your rules. Your board. <span>Local editor · Download your draft before leaving.</span></footer>

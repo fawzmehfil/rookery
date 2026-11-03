@@ -14,11 +14,10 @@ only after parsing and semantic validation find no blocking issues. Without a
 Task 07 callback, the editor offers a validated JSON download for the same exact
 contract. This is a handoff boundary, not a second persistence format.
 
-Task 04 is draft PR #12. This branch is stacked on it until that PR merges.
-Task 06 is open PR #6. The exact shared `BoardSurface` implementation and its
-test tooling are reused from that PR, with a narrow adapter translating numeric
-coordinates to square names and player IDs to presentation sides. Reconcile those
-shared files with PR #6 before merge; do not maintain a second renderer.
+Tasks 04 and 06 are merged dependencies. The editor imports the shared
+`BoardSurface` and validation contract directly from current `main`, with a narrow
+adapter translating numeric coordinates to square names and player IDs to
+presentation sides. There is one renderer for editor and playtest consumers.
 
 ## Interactions
 
@@ -44,13 +43,11 @@ shared files with PR #6 before merge; do not maintain a second renderer.
 - Feature: `model.ts` contains pure immutable edits and the validated handoff;
   `board-adapter.ts` translates presentation coordinates; `movement-form.tsx`
   contains staged bounded inputs; `variant-editor.tsx` coordinates the controls.
-- Board surface and root UI test configuration are copied unchanged from PR #6.
-  Its existing tests are retained. The rules package still uses its original
-  separate Node Vitest configuration.
-- Test dependencies match PR #6's declared ranges. One editor dependency/lockfile
-  update adds that same UI test tooling, rather than a competing setup.
+- Board surface and root UI test configuration come from merged Task 06. Its
+  existing tests are retained. The rules package keeps its separate Node Vitest
+  configuration.
 - `npm.cmd run check`: lint, app/rules type checks, 44 UI/model/board tests,
-  86 rules tests, and the production build pass. One opt-in timing test skips in
+  87 rules tests, and the production build pass. One opt-in timing test skips in
   the ordinary run; enabling it passes separately.
 - `npm.cmd audit --omit=dev`: zero vulnerabilities. Full `npm.cmd audit` still
   reports the 16 pre-existing moderate development-toolchain findings described
@@ -78,6 +75,6 @@ field paths and links back to setup or movement controls.
   always represent committed draft rules, not unfinished form input.
 - Task 07 is not implemented here. Supply `onPlaytest` to integrate it; the route
   currently downloads a validated JSON definition instead of launching a game.
-- Rebase onto current main after #12 and #6 merge; reconcile copied shared board
-  and test tooling with #6. No changes should be merged before approval/green CI.
+- The branch is based on the merged validation and board dependencies. No changes
+  should be merged before approval and green CI.
 - No task URL was supplied; add the Notion task link to the PR when available.
