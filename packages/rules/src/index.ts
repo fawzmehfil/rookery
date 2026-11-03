@@ -58,6 +58,7 @@ export {
   vectorSchema,
 } from "./schema";
 export { coordinateToSquare, squareToCoordinate } from "./coordinates";
+export { applyAction } from "./apply-action";
 export { createInitialState } from "./create-initial-state";
 export { evaluateOutcome } from "./evaluate-outcome";
 export { getLegalActions } from "./get-legal-actions";

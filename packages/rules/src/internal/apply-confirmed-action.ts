@@ -21,70 +21,13 @@ export function applyConfirmedAction(
   state: GameState,
   action: MoveAction,
 ): ApplyActionResult {
-  if (state.variantId !== variant.id) {
-    return failure("INVALID_VARIANT", "The game state belongs to a different variant.", {
-      expectedVariantId: variant.id,
-      stateVariantId: state.variantId,
-    });
-  }
+  const preconditionError = validateConfirmedActionPreconditions(variant, state, action);
 
-  if (state.outcome !== null || state.activePlayerId === null) {
-    return failure("GAME_ALREADY_ENDED", "No actions are accepted after the game has ended.");
-  }
+  if (preconditionError) return { ok: false, error: preconditionError };
 
-  const movingPiece = state.pieces.find(({ id }) => id === action.pieceId);
-
-  if (!movingPiece) {
-    return failure("PIECE_NOT_FOUND", "The action references a piece that is not in the current position.", {
-      pieceId: action.pieceId,
-    });
-  }
-
-  if (movingPiece.ownerId !== state.activePlayerId) {
-    return failure("NOT_ACTIVE_PLAYER", "The selected piece does not belong to the active player.", {
-      pieceId: movingPiece.id,
-      pieceOwnerId: movingPiece.ownerId,
-      activePlayerId: state.activePlayerId,
-    });
-  }
-
-  if (sameCoordinate(movingPiece.at, action.to)) {
-    return failure("SAME_SQUARE", "A piece must move to a different cell.", {
-      pieceId: movingPiece.id,
-      coordinate: coordinateKey(action.to),
-    });
-  }
-
-  if (!isOnBoard(action.to, variant.board.files, variant.board.ranks)) {
-    return failure("DESTINATION_OUT_OF_BOUNDS", "The destination is outside the board.", {
-      coordinate: coordinateKey(action.to),
-    });
-  }
-
-  if (variant.board.disabledCells.some((coordinate) => sameCoordinate(coordinate, action.to))) {
-    return failure("DESTINATION_DISABLED", "The destination is not an active board cell.", {
-      coordinate: coordinateKey(action.to),
-    });
-  }
-
+  const movingPiece = state.pieces.find(({ id }) => id === action.pieceId)!;
   const capturedPiece = state.pieces.find(({ at }) => sameCoordinate(at, action.to));
-
-  if (capturedPiece?.ownerId === movingPiece.ownerId) {
-    return failure("DESTINATION_OCCUPIED_BY_ALLY", "The destination contains a friendly piece.", {
-      pieceId: movingPiece.id,
-      occupyingPieceId: capturedPiece.id,
-      coordinate: coordinateKey(action.to),
-    });
-  }
-
-  const nextPlayerId = nextPlayer(variant, state.activePlayerId);
-
-  if (!nextPlayerId) {
-    return failure("INVALID_VARIANT", "The active player is missing from the variant turn order.", {
-      activePlayerId: state.activePlayerId,
-    });
-  }
-
+  const nextPlayerId = nextPlayer(variant, state.activePlayerId!)!;
   const nextPly = state.ply + 1;
   const from = freezeCoordinate(movingPiece.at);
   const to = freezeCoordinate(action.to);
@@ -137,7 +80,7 @@ export function applyConfirmedAction(
       Object.freeze({
         type: "turn-changed",
         ply: nextPly,
-        fromPlayerId: state.activePlayerId,
+        fromPlayerId: state.activePlayerId!,
         toPlayerId: nextPlayerId,
       }),
     );
@@ -158,18 +101,97 @@ export function applyConfirmedAction(
   };
 }
 
-function failure(
+/** Shared preflight for the public legality gate and the confirmed kernel. */
+export function validateConfirmedActionPreconditions(
+  variant: VariantDefinition,
+  state: GameState,
+  action: MoveAction,
+): EngineError | null {
+  if (state.variantId !== variant.id) {
+    return engineError("INVALID_VARIANT", "The game state belongs to a different variant.", {
+      expectedVariantId: variant.id,
+      stateVariantId: state.variantId,
+    });
+  }
+
+  if (state.outcome !== null || state.activePlayerId === null) {
+    return engineError("GAME_ALREADY_ENDED", "No actions are accepted after the game has ended.");
+  }
+
+  const movingPiece = state.pieces.find(({ id }) => id === action.pieceId);
+
+  if (!movingPiece) {
+    return engineError("PIECE_NOT_FOUND", "The action references a piece that is not in the current position.", {
+      pieceId: action.pieceId,
+    });
+  }
+
+  if (movingPiece.ownerId !== state.activePlayerId) {
+    return engineError("NOT_ACTIVE_PLAYER", "The selected piece does not belong to the active player.", {
+      pieceId: movingPiece.id,
+      pieceOwnerId: movingPiece.ownerId,
+      activePlayerId: state.activePlayerId,
+    });
+  }
+
+  if (sameCoordinate(movingPiece.at, action.to)) {
+    return engineError("SAME_SQUARE", "A piece must move to a different cell.", {
+      pieceId: movingPiece.id,
+      coordinate: coordinateKey(action.to),
+    });
+  }
+
+  if (!isOnBoard(action.to, variant.board.files, variant.board.ranks)) {
+    return engineError("DESTINATION_OUT_OF_BOUNDS", "The destination is outside the board.", {
+      coordinate: coordinateKey(action.to),
+    });
+  }
+
+  if (variant.board.disabledCells.some((coordinate) => sameCoordinate(coordinate, action.to))) {
+    return engineError("DESTINATION_DISABLED", "The destination is not an active board cell.", {
+      coordinate: coordinateKey(action.to),
+    });
+  }
+
+  const capturedPiece = state.pieces.find(({ at }) => sameCoordinate(at, action.to));
+
+  if (capturedPiece?.ownerId === movingPiece.ownerId) {
+    return engineError("DESTINATION_OCCUPIED_BY_ALLY", "The destination contains a friendly piece.", {
+      pieceId: movingPiece.id,
+      occupyingPieceId: capturedPiece.id,
+      coordinate: coordinateKey(action.to),
+    });
+  }
+
+  const nextPlayerId = nextPlayer(variant, state.activePlayerId);
+
+  if (!nextPlayerId) {
+    return engineError("INVALID_VARIANT", "The active player is missing from the variant turn order.", {
+      activePlayerId: state.activePlayerId,
+    });
+  }
+
+  return null;
+}
+
+export function actionFailure(
   code: EngineErrorCode,
   message: string,
   details?: Readonly<Record<string, EngineErrorDetail>>,
 ): ApplyActionResult {
-  const error: EngineError = Object.freeze({
+  return { ok: false, error: engineError(code, message, details) };
+}
+
+function engineError(
+  code: EngineErrorCode,
+  message: string,
+  details?: Readonly<Record<string, EngineErrorDetail>>,
+): EngineError {
+  return Object.freeze({
     code,
     message,
     ...(details ? { details: Object.freeze({ ...details }) } : {}),
   });
-
-  return { ok: false, error };
 }
 
 function nextPlayer(variant: VariantDefinition, activePlayerId: string): string | null {
