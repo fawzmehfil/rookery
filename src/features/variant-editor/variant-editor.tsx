@@ -6,15 +6,15 @@ import { useMemo, useState } from "react";
 import { coordinateToSquare, squareToCoordinate, validateVariantDefinition, type Coordinate, type VariantDefinition } from "@rookery/rules";
 import { firstFlightVariant } from "@rookery/rules/fixtures";
 import { BoardSurface } from "@/components/board-surface";
+import { variantBoardPieces } from "@/features/variant-board/board-adapter";
 import rookeryLogo from "../../../assets/rookery.png";
-import { editorBoardPieces } from "./board-adapter";
 import { MovementForm, movementDescription } from "./movement-form";
 import { movePiece, placePiece, playtestDraft, removeMovement, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, setMovement, type EditResult } from "./model";
 import styles from "./variant-editor.module.css";
 
 export type VariantEditorProps = {
   initialVariant?: VariantDefinition;
-  onPlaytest?: (variant: VariantDefinition) => void;
+  onPlaytest?: (variant: VariantDefinition) => string | void;
 };
 
 export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest }: VariantEditorProps) {
@@ -66,7 +66,11 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   function handoff() {
     const valid = playtestDraft(draft);
     if (!valid) { setMessage("Resolve blocking issues before handing off this draft."); return; }
-    if (onPlaytest) { onPlaytest(valid); return; }
+    if (onPlaytest) {
+      const integrationError = onPlaytest(valid);
+      if (integrationError) setMessage(integrationError);
+      return;
+    }
     const url = URL.createObjectURL(new Blob([JSON.stringify(valid, null, 2)], { type: "application/json" }));
     const a = document.createElement("a"); a.href = url; a.download = `${valid.id}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -118,7 +122,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
       <section className={styles.boardPanel} aria-labelledby="board-heading" id="editor-board">
         <div className={styles.boardTop}><h2 id="board-heading">{draft.name}</h2><span>{draft.board.files} × {draft.board.ranks} / {draft.setup.length} pieces</span></div>
         <div className={styles.boardScroll} style={{ maxHeight: draft.board.ranks > draft.board.files * 2 ? "74vh" : undefined }}><div className={styles.boardFrame} style={{ minWidth: Math.max(240, draft.board.files * 30) }}>
-          <BoardSurface files={draft.board.files} ranks={draft.board.ranks} pieces={editorBoardPieces(draft)} label="Variant editor board"
+          <BoardSurface files={draft.board.files} ranks={draft.board.ranks} pieces={variantBoardPieces(draft, draft.setup)} label="Variant editor board"
             selectedSquare={selected ? coordinateToSquare(selected) : null} disabledSquares={draft.board.disabledCells.map(coordinateToSquare)}
             onSquareActivate={({ square }) => { const at = squareToCoordinate(square); if (at) activate(at); }} />
         </div></div>
@@ -142,6 +146,6 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
       <div><p className={styles.eyebrow}>03 · Draft check</p><h2 id="validation-heading">{blocking.length ? `${blocking.length} issue${blocking.length === 1 ? "" : "s"} to resolve` : "Ready for the next move."}</h2><p>Drafts stay editable. Only blocking errors prevent handoff.</p></div>
       <div aria-live="polite">{issues.length ? <ul>{issues.map((issue, i) => <li key={`${issue.code}-${i}`} className={issue.severity === "error" ? styles.error : ""}><strong>{issue.severity === "error" ? "Error" : "Warning"}</strong> · <a href={issue.path[0] === "pieceTypes" ? "#movement-panel" : "#setup-heading"}>{issue.path.join(".") || "variant"}</a>: {issue.message}</li>)}</ul> : <p className={styles.valid}>✓ Shared schema and semantic checks pass.</p>}</div>
     </section>
-    <footer className={styles.footer}>Your rules. Your board. <span>Local editor · Download your draft before leaving.</span></footer>
+    <footer className={styles.footer}>Your rules. Your board. <span>{onPlaytest ? "Local editor · Playtest without leaving this tab." : "Local editor · Download your draft before leaving."}</span></footer>
   </main>;
 }

@@ -23,7 +23,7 @@ Given identical inputs and an engine version, every runtime must produce an iden
 | Component | Responsibility | Initial home |
 | --- | --- | --- |
 | Web app | Marketing, editor UI, gallery, game client, account flows | `src/app` |
-| Rules package | Schema validation, legal actions, state transitions, win detection | Extract to `packages/rules` at first implementation |
+| Rules package | Schema validation, legal actions, state transitions, win detection | `packages/rules` |
 | Application API | Variants, publishing, remixes, games, user data | Next.js route handlers initially |
 | Multiplayer service | Rooms, clocks, reconnects, authoritative action processing | Add as `apps/realtime` when online play begins |
 | Simulation workers | Balance checks, bots, and bulk game execution | Add only after the engine API stabilizes |
@@ -49,8 +49,8 @@ PostgreSQL is the source of truth. Redis should be introduced only when multiple
 
 ## Suggested delivery slices
 
-1. **Local sandbox:** standard chess position, deterministic move generation, undo, and JSON import/export.
-2. **Variant editor:** board and piece editing with schema validation and draft persistence.
+1. **Local sandbox:** deterministic move generation and a local editor-to-playtest session.
+2. **Variant editor:** board and piece editing with schema validation; draft persistence and JSON import/export remain follow-up work.
 3. **Publishing:** accounts, immutable versions, share pages, and remix lineage.
 4. **Online games:** authoritative rooms, clocks, reconnects, and history.
 5. **Community and simulation:** search, moderation, featured variants, bots, and balance tooling.
