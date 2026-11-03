@@ -52,7 +52,25 @@ export function validateVariantDefinition(input: unknown): readonly ValidationIs
     if (disabled.has(coordinateKey(at))) add("DUPLICATE_DISABLED_CELL", ["board", "disabledCells", i], "This cell is already disabled.");
     disabled.add(coordinateKey(at));
   });
-  const types = new Set(v.pieceTypes.map((p) => p.id));
+  const pieceTypesById = new Map(v.pieceTypes.map((pieceType) => [pieceType.id, pieceType]));
+  const types = new Set(pieceTypesById.keys());
+  const playableCells = Array.from({ length: v.board.files * v.board.ranks }, (_, index) => ({
+    file: index % v.board.files,
+    rank: Math.floor(index / v.board.files),
+  })).filter((at) => !disabled.has(coordinateKey(at)));
+  const playableCellKeys = new Set(playableCells.map(coordinateKey));
+  const landableVectorCache = new Map<string, boolean>();
+  const canLandOnPlayableCell = (fileDelta: number, rankDelta: number) => {
+    const key = `${fileDelta},${rankDelta}`;
+    const cached = landableVectorCache.get(key);
+    if (cached !== undefined) return cached;
+    const landable = playableCells.some((from) => playableCellKeys.has(coordinateKey({
+      file: from.file + fileDelta,
+      rank: from.rank + rankDelta,
+    })));
+    landableVectorCache.set(key, landable);
+    return landable;
+  };
   const occupied = new Set<string>();
   v.setup.forEach((p, i) => {
     if (!types.has(p.typeId)) add("UNKNOWN_PIECE_TYPE", ["setup", i, "typeId"], "Choose a defined piece type.");
@@ -64,26 +82,30 @@ export function validateVariantDefinition(input: unknown): readonly ValidationIs
     occupied.add(key);
   });
   const royalTypes = new Set(v.pieceTypes.filter((p) => p.royal).map((p) => p.id));
+  const captureCapabilityCache = new Map<string, boolean>();
   v.players.forEach((p, i) => {
     const owned = v.setup.filter((piece) => piece.ownerId === p.id);
     if (owned.filter((piece) => royalTypes.has(piece.typeId)).length !== 1)
       add("INVALID_ROYAL_COUNT", ["players", i], `${p.name} needs exactly one starting royal for capture-the-royal.`);
-    const canCaptureOnBoard = (typeId: string) => v.pieceTypes.some(t => t.id === typeId && t.movements.some(m => {
-      if (m.mode === "move-only") return false;
-      const vectors = m.kind === "slide" ? m.directions : m.offsets;
-      // A slide's first step suffices to prove that some capture edge exists.
-      // Ignore occupancy and reachability: reject only geometric impossibility.
-      for (let file = 0; file < v.board.files; file++) for (let rank = 0; rank < v.board.ranks; rank++) {
-        if (disabled.has(coordinateKey({ file, rank }))) continue;
-        if (vectors.some(vector => {
-          const target = { file: file + vector.fileDelta,
-            rank: rank + vector.rankDelta * (m.frame === "owner" ? p.forwardRank : 1) };
-          return onBoard(target) && !disabled.has(coordinateKey(target));
-        })) return true;
-      }
-      return false;
-    }));
-    if (!owned.some(piece => canCaptureOnBoard(piece.typeId)))
+    const canCaptureOnBoard = (typeId: string) => {
+      const cacheKey = `${p.id}\0${typeId}`;
+      const cached = captureCapabilityCache.get(cacheKey);
+      if (cached !== undefined) return cached;
+      const pieceType = pieceTypesById.get(typeId);
+      const capable = pieceType?.movements.some((movement) => {
+        if (movement.mode === "move-only") return false;
+        const vectors = movement.kind === "slide" ? movement.directions : movement.offsets;
+        // A slide's first step suffices to prove that some capture edge exists.
+        // Ignore occupancy and reachability: reject only geometric impossibility.
+        return vectors.some((vector) => canLandOnPlayableCell(
+          vector.fileDelta,
+          vector.rankDelta * (movement.frame === "owner" ? p.forwardRank : 1),
+        ));
+      }) ?? false;
+      captureCapabilityCache.set(cacheKey, capable);
+      return capable;
+    };
+    if (![...new Set(owned.map((piece) => piece.typeId))].some(canCaptureOnBoard))
       add("NO_CAPTURE_MOVEMENT", ["players", i], `${p.name} needs a placed piece with capture-capable movement usable on this board to win.`);
   });
   // Avoid cascading engine diagnostics when references or positions are invalid.

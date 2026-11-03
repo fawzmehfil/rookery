@@ -63,6 +63,51 @@ describe("semantic validation", () => {
     expect(validateVariantDefinition(v).filter(i => i.code === "NO_CAPTURE_MOVEMENT").map(i => i.path)).toEqual([["players", 0], ["players", 1]]);
   });
 
+  it("bounds capture analysis for a near-maximum adversarial definition", () => {
+    const slowMovements = Array.from({ length: 64 }, () => ({
+      kind: "leap" as const,
+      frame: "board" as const,
+      mode: "move-or-capture" as const,
+      offsets: Array.from({ length: 64 }, () => ({ fileDelta: 25, rankDelta: 25 })),
+    }));
+    const setup = [];
+    for (let rank = 0; rank < 26; rank++) for (let file = 0; file < 26; file++) {
+      if ((file === 25 && rank === 25) || (rank === 0 && (file === 0 || file === 1))) continue;
+      setup.push({
+        id: `slow-${file}-${rank}`,
+        typeId: "slow",
+        ownerId: (file + rank) % 2 === 0 ? "white" : "black",
+        at: { file, rank },
+      });
+    }
+    setup.push(
+      { id: "white-royal", typeId: "royal", ownerId: "white", at: { file: 0, rank: 0 } },
+      { id: "black-royal", typeId: "royal", ownerId: "black", at: { file: 1, rank: 0 } },
+    );
+    const input = {
+      schemaVersion: 1,
+      id: "validator-stress",
+      name: "Validator stress fixture",
+      board: { files: 26, ranks: 26, disabledCells: [{ file: 25, rank: 25 }] },
+      players: [
+        { id: "white", name: "White", forwardRank: 1 },
+        { id: "black", name: "Black", forwardRank: -1 },
+      ],
+      turnOrder: ["white", "black"],
+      pieceTypes: [
+        { id: "slow", name: "Slow", royal: false, movements: slowMovements },
+        { id: "royal", name: "Royal", royal: true, movements: [{
+          kind: "step", frame: "board", mode: "move-or-capture", offsets: [{ fileDelta: 1, rankDelta: 0 }],
+        }] },
+      ],
+      setup,
+      objectives: [{ type: "capture-royal" }],
+    };
+
+    expect(setup).toHaveLength(675);
+    expect(validateVariantDefinition(input)).toEqual([]);
+  }, 2_000);
+
   it.each([null, undefined, 1, "not-json", {}, [], { schemaVersion: 8 }])("reports ordinary invalid input without throwing: %j", input => {
     expect(() => validateVariantDefinition(input)).not.toThrow();
     expect(validateVariantDefinition(input)[0]).toMatchObject({ code: "SCHEMA_INVALID", severity: "error" });
