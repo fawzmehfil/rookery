@@ -10,7 +10,12 @@ For the current stateless build:
 2. Build the `Dockerfile`, or import the repository into a Next.js-compatible host.
 3. Point the domain to the hosting provider and enforce HTTPS.
 4. Configure uptime monitoring against `/api/health`.
-5. Deploy from `main` only after the CI check succeeds.
+5. Deploy from `main` only after the CI `npm run verify` gate succeeds.
+
+The same command is the local release gate. It builds the standalone server,
+starts it on an isolated port, verifies `/api/health`, `/`, and `/editor`, then
+stops it. The workflow uses the repository's `.nvmrc` Node 22 release and a clean
+`npm ci`, so it does not rely on local generated files.
 
 ## Before user data ships
 
