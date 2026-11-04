@@ -1,5 +1,5 @@
-import { VariantEditor } from "@/features/variant-editor/variant-editor";
+import { VariantWorkshop } from "@/features/variant-workshop/variant-workshop";
 
 export default function EditorPage() {
-  return <VariantEditor />;
+  return <VariantWorkshop />;
 }

@@ -10,14 +10,15 @@ rejection without altering the original. No engine internals enter the editor.
 
 `VariantEditor` accepts an optional `initialVariant: VariantDefinition` and an
 optional `onPlaytest(variant: VariantDefinition)` callback. It calls the latter
-only after parsing and semantic validation find no blocking issues. Without a
-Task 07 callback, the editor offers a validated JSON download for the same exact
-contract. This is a handoff boundary, not a second persistence format.
+only after parsing and semantic validation find no blocking issues. The integrated
+`VariantWorkshop` callback sends that same object through the local session trust
+boundary; it does not translate it into another domain model. Without a callback,
+the editor still offers a validated JSON download for the exact shared contract.
 
 Tasks 04 and 06 are merged dependencies. The editor imports the shared
-`BoardSurface` and validation contract directly from current `main`, with a narrow
-adapter translating numeric coordinates to square names and player IDs to
-presentation sides. There is one renderer for editor and playtest consumers.
+`BoardSurface` and validation contract directly from current `main`. The shared
+`variant-board` adapter translates engine/editor pieces to presentation square
+names and sides. There is one adapter and one renderer for both consumers.
 
 ## Interactions
 
@@ -41,8 +42,9 @@ presentation sides. There is one renderer for editor and playtest consumers.
 
 - Route: `src/app/editor/page.tsx`; homepage workshop link enters `/editor`.
 - Feature: `model.ts` contains pure immutable edits and the validated handoff;
-  `board-adapter.ts` translates presentation coordinates; `movement-form.tsx`
-  contains staged bounded inputs; `variant-editor.tsx` coordinates the controls.
+  `src/features/variant-board/board-adapter.ts` translates presentation data;
+  `movement-form.tsx` contains staged bounded inputs; `variant-editor.tsx`
+  coordinates the controls. `VariantWorkshop` owns editor/playtest mode and draft.
 - Board surface and root UI test configuration come from merged Task 06. Its
   existing tests are retained. The rules package keeps its separate Node Vitest
   configuration.
@@ -73,8 +75,8 @@ field paths and links back to setup or movement controls.
   valid drafts before leaving. Import, accounts and storage are outside this task.
 - Forms stage changes until Save/Add. The readable preview and downloaded data
   always represent committed draft rules, not unfinished form input.
-- Task 07 is not implemented here. Supply `onPlaytest` to integrate it; the route
-  currently downloads a validated JSON definition instead of launching a game.
+- Task 07 supplies `onPlaytest` at `/editor`, preserving the current draft while a
+  disposable local session runs. Returning to edit discards the session, not the draft.
 - The branch is based on the merged validation and board dependencies. No changes
   should be merged before approval and green CI.
 - No task URL was supplied; add the Notion task link to the PR when available.

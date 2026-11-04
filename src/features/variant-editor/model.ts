@@ -80,5 +80,5 @@ export function removeMovement(v: VariantDefinition, typeId: string, index: numb
 /** Exact shared contract for Task 07; a bad draft is retained by the editor. */
 export function playtestDraft(v: VariantDefinition): VariantDefinition | null {
   const parsed = parseVariantDefinition(v);
-  return parsed.ok && !validateVariantDefinition(parsed.value).some(i => i.severity === "error") ? parsed.value : null;
+  return parsed.ok && !validateVariantDefinition(v).some(i => i.severity === "error") ? v : null;
 }

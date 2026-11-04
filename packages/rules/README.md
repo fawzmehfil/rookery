@@ -12,7 +12,7 @@ Framework-independent contracts and deterministic rules for Rookery variants.
 
 ## Legal actions
 
-`getLegalActions(variant, state)` returns every movement-legal `MoveAction` for the active player. It does not apply actions; callers compare a proposed action against this list before the confirmed-action kernel runs.
+`getLegalActions(variant, state)` returns every movement-legal `MoveAction` for the active player. `applyAction(variant, state, action)` is the safe public mutation path: it reports generic state/action errors, confirms an exact match in the current legal-action set, and only then invokes the internal confirmed-action kernel. An otherwise well-formed illegal move returns `ACTION_NOT_LEGAL`; rejected actions never change state.
 
 - **Frames:** `board` vectors are used as written. `owner` vectors are written from the owner's side: `rankDelta` is multiplied by the player's `forwardRank`, and `fileDelta` is unchanged (a vertical flip, not a 180° rotation).
 - **Steps and leaps** land directly on their offset. Leaps ignore intervening cells.

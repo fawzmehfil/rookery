@@ -119,7 +119,7 @@ export type EngineErrorCode =
   | "DESTINATION_OUT_OF_BOUNDS"
   | "DESTINATION_DISABLED"
   | "DESTINATION_OCCUPIED_BY_ALLY"
-  | "LEGAL_ACTIONS_UNAVAILABLE";
+  | "ACTION_NOT_LEGAL";
 
 export type EngineErrorDetail = string | number | boolean | null;
 

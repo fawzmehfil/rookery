@@ -78,10 +78,10 @@ every user-authored variant.
 
 ## Limits and dependencies
 
-Main does not yet export public `applyAction`. Transition quality tests therefore
-exercise the existing confirmed-action kernel, explicitly check movement legality
-first, and test only its documented rejection cases. Full public illegal-action
-assertions must be connected when Task 03's public implementation is available.
+Task 07 adds public `applyAction`. It preserves the confirmed kernel's structured
+precondition errors, rejects well-formed movement-illegal input as
+`ACTION_NOT_LEGAL`, and invokes the transition kernel only after an exact match in
+the current `getLegalActions` result. The confirmed kernel remains internal.
 No new public transition API is introduced here.
 
 Validation checks structural contradictions, objective royal counts, each player's
