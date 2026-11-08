@@ -3,13 +3,19 @@ import type {
   boardDefinitionSchema,
   captureRoyalObjectiveSchema,
   coordinateSchema,
+  currentVariantDefinitionSchema,
+  eliminateAllObjectiveSchema,
   leapMovementSchema,
+  legacyVariantDefinitionSchema,
   movementFrameSchema,
   movementModeSchema,
   movementPatternSchema,
+  objectiveDefinitionSchema,
   piecePlacementSchema,
   pieceTypeDefinitionSchema,
   playerDefinitionSchema,
+  reachTargetObjectiveSchema,
+  reachTargetPlayerTargetsSchema,
   slideMovementSchema,
   stepMovementSchema,
   variantDefinitionSchema,
@@ -35,6 +41,12 @@ export type PlayerDefinition = DeepReadonly<z.output<typeof playerDefinitionSche
 export type PieceTypeDefinition = DeepReadonly<z.output<typeof pieceTypeDefinitionSchema>>;
 export type PiecePlacement = DeepReadonly<z.output<typeof piecePlacementSchema>>;
 export type CaptureRoyalObjective = DeepReadonly<z.output<typeof captureRoyalObjectiveSchema>>;
+export type ReachTargetPlayerTargets = DeepReadonly<z.output<typeof reachTargetPlayerTargetsSchema>>;
+export type ReachTargetObjective = DeepReadonly<z.output<typeof reachTargetObjectiveSchema>>;
+export type EliminateAllObjective = DeepReadonly<z.output<typeof eliminateAllObjectiveSchema>>;
+export type ObjectiveDefinition = DeepReadonly<z.output<typeof objectiveDefinitionSchema>>;
+export type LegacyVariantDefinition = DeepReadonly<z.output<typeof legacyVariantDefinitionSchema>>;
+export type CurrentVariantDefinition = DeepReadonly<z.output<typeof currentVariantDefinitionSchema>>;
 export type VariantDefinition = DeepReadonly<z.output<typeof variantDefinitionSchema>>;
 
 export type ParseIssue = Readonly<{
@@ -54,13 +66,32 @@ export type GamePiece = Readonly<{
   at: Coordinate;
 }>;
 
-export type WinOutcome = Readonly<{
+export type CaptureRoyalWinOutcome = Readonly<{
   type: "win";
   reason: "capture-royal";
   winnerPlayerId: string;
   loserPlayerId: string;
   capturedPieceId: string;
 }>;
+
+export type ReachTargetWinOutcome = Readonly<{
+  type: "win";
+  reason: "reach-target";
+  winnerPlayerId: string;
+  loserPlayerId: string;
+  pieceId: string;
+  target: Coordinate;
+}>;
+
+export type EliminateAllWinOutcome = Readonly<{
+  type: "win";
+  reason: "eliminate-all";
+  winnerPlayerId: string;
+  loserPlayerId: string;
+  capturedPieceId: string;
+}>;
+
+export type WinOutcome = CaptureRoyalWinOutcome | ReachTargetWinOutcome | EliminateAllWinOutcome;
 
 export type GameOutcome = WinOutcome;
 

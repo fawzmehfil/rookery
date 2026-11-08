@@ -26,6 +26,20 @@ describe("createInitialState", () => {
     expect(Object.isFrozen(first.value.pieces[0]?.at)).toBe(true);
   });
 
+  it("does not impose capture-the-royal setup rules on current non-royal objectives", () => {
+    const variant = cloneVariant();
+    variant.schemaVersion = 2;
+    variant.objectives = [{ type: "eliminate-all" }];
+    variant.pieceTypes.forEach((pieceType) => {
+      pieceType.royal = false;
+    });
+
+    const result = createInitialState(variant as VariantDefinition);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.outcome).toBeNull();
+  });
+
   it.each([
     [
       "duplicate piece IDs",

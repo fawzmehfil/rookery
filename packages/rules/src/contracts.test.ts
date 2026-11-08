@@ -3,6 +3,9 @@ import {
   coordinateToSquare,
   parseVariantDefinition,
   squareToCoordinate,
+  type CurrentVariantDefinition,
+  type EliminateAllWinOutcome,
+  type ReachTargetWinOutcome,
   type RulesEngine,
   type VariantDefinition,
 } from "./index";
@@ -39,6 +42,21 @@ const validVariant = {
   objectives: [{ type: "capture-royal" }],
 } as const;
 
+const validCurrentVariant = {
+  ...validVariant,
+  schemaVersion: 2,
+  objectives: [
+    {
+      type: "reach-target",
+      requireAction: true,
+      targets: [
+        { playerId: "white", cells: [{ file: 2, rank: 4 }], eligiblePieceTypeIds: ["royal"] },
+        { playerId: "black", cells: [{ file: 2, rank: 0 }], eligiblePieceTypeIds: ["royal"] },
+      ],
+    },
+  ],
+} as const;
+
 describe("variant contracts", () => {
   it("parses a structurally valid variant", () => {
     const result = parseVariantDefinition(validVariant);
@@ -47,8 +65,57 @@ describe("variant contracts", () => {
     if (result.ok) expectTypeOf(result.value).toMatchTypeOf<VariantDefinition>();
   });
 
+  it("parses each current objective through the version 2 contract", () => {
+    const objectiveSources = [
+      [{ type: "capture-royal" }],
+      validCurrentVariant.objectives,
+      [{ type: "eliminate-all" }],
+    ] as const;
+
+    for (const objectives of objectiveSources) {
+      const result = parseVariantDefinition({ ...validCurrentVariant, objectives });
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.schemaVersion).toBe(2);
+    }
+  });
+
+  it("normalizes the reach-target action requirement without changing version 1 input", () => {
+    const withoutRequirement = {
+      ...validCurrentVariant,
+      objectives: [
+        {
+          type: "reach-target",
+          targets: validCurrentVariant.objectives[0].targets,
+        },
+      ],
+    };
+
+    const currentResult = parseVariantDefinition(withoutRequirement);
+    expect(currentResult.ok).toBe(true);
+    if (currentResult.ok) {
+      expect(currentResult.value.objectives[0]).toMatchObject({ requireAction: true });
+      expectTypeOf(currentResult.value).toMatchTypeOf<VariantDefinition>();
+    }
+
+    expect(parseVariantDefinition(validVariant)).toEqual({ ok: true, value: validVariant });
+  });
+
   it.each([
-    ["unsupported schema version", { ...validVariant, schemaVersion: 2 }],
+    ["unsupported schema version", { ...validVariant, schemaVersion: 3 }],
+    ["version 1 with a current objective", { ...validVariant, objectives: [{ type: "eliminate-all" }] }],
+    ["unknown objective", { ...validCurrentVariant, objectives: [{ type: "survive" }] }],
+    [
+      "reach-target without two player entries",
+      {
+        ...validCurrentVariant,
+        objectives: [
+          {
+            ...validCurrentVariant.objectives[0],
+            targets: validCurrentVariant.objectives[0].targets.slice(0, 1),
+          },
+        ],
+      },
+    ],
     ["wrong player count", { ...validVariant, players: validVariant.players.slice(0, 1) }],
     ["oversized board", { ...validVariant, board: { files: 27, ranks: 5, disabledCells: [] } }],
     [
@@ -110,6 +177,12 @@ describe("variant contracts", () => {
     expectTypeOf<RulesEngine>().toHaveProperty("getLegalActions");
     expectTypeOf<RulesEngine>().toHaveProperty("applyAction");
     expectTypeOf<RulesEngine>().toHaveProperty("evaluateOutcome");
+  });
+
+  it("exports current variant and outcome contracts for downstream implementations", () => {
+    expectTypeOf(validCurrentVariant).toMatchTypeOf<CurrentVariantDefinition>();
+    expectTypeOf<ReachTargetWinOutcome>().toHaveProperty("target");
+    expectTypeOf<EliminateAllWinOutcome>().toHaveProperty("capturedPieceId");
   });
 });
 

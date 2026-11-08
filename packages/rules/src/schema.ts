@@ -112,19 +112,60 @@ export const piecePlacementSchema = z
 
 export const captureRoyalObjectiveSchema = z.object({ type: z.literal("capture-royal") }).strict();
 
-export const variantDefinitionSchema = z
+export const reachTargetPlayerTargetsSchema = z
+  .object({
+    playerId: identifierSchema,
+    cells: z.array(coordinateSchema).min(1).max(MAX_BOARD_CELLS),
+    eligiblePieceTypeIds: z.array(identifierSchema).min(1).max(MAX_PIECE_TYPES).optional(),
+  })
+  .strict();
+
+export const reachTargetObjectiveSchema = z
+  .object({
+    type: z.literal("reach-target"),
+    requireAction: z.literal(true).default(true),
+    targets: z.array(reachTargetPlayerTargetsSchema).length(2),
+  })
+  .strict();
+
+export const eliminateAllObjectiveSchema = z.object({ type: z.literal("eliminate-all") }).strict();
+
+export const objectiveDefinitionSchema = z.discriminatedUnion("type", [
+  captureRoyalObjectiveSchema,
+  reachTargetObjectiveSchema,
+  eliminateAllObjectiveSchema,
+]);
+
+const variantDefinitionFields = {
+  id: identifierSchema,
+  name: z.string().trim().min(1).max(120),
+  board: boardDefinitionSchema,
+  players: z.array(playerDefinitionSchema).length(2),
+  turnOrder: z.array(identifierSchema).length(2),
+  pieceTypes: z.array(pieceTypeDefinitionSchema).min(1).max(MAX_PIECE_TYPES),
+  setup: z.array(piecePlacementSchema).min(1).max(MAX_BOARD_CELLS),
+};
+
+export const legacyVariantDefinitionSchema = z
   .object({
     schemaVersion: z.literal(1),
-    id: identifierSchema,
-    name: z.string().trim().min(1).max(120),
-    board: boardDefinitionSchema,
-    players: z.array(playerDefinitionSchema).length(2),
-    turnOrder: z.array(identifierSchema).length(2),
-    pieceTypes: z.array(pieceTypeDefinitionSchema).min(1).max(MAX_PIECE_TYPES),
-    setup: z.array(piecePlacementSchema).min(1).max(MAX_BOARD_CELLS),
+    ...variantDefinitionFields,
     objectives: z.array(captureRoyalObjectiveSchema).length(1),
   })
   .strict();
+
+export const currentVariantDefinitionSchema = z
+  .object({
+    schemaVersion: z.literal(2),
+    ...variantDefinitionFields,
+    objectives: z.array(objectiveDefinitionSchema).length(1),
+  })
+  .strict();
+
+export const variantDefinitionSchema = z.discriminatedUnion("schemaVersion", [
+  legacyVariantDefinitionSchema,
+  currentVariantDefinitionSchema,
+]);
 
 function greatestCommonDivisor(left: number, right: number): number {
   let a = left;

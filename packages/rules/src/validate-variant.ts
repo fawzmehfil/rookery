@@ -81,33 +81,35 @@ export function validateVariantDefinition(input: unknown): readonly ValidationIs
     if (occupied.has(key)) add("OVERLAPPING_PIECES", ["setup", i, "at"], "Only one piece can occupy this cell.");
     occupied.add(key);
   });
-  const royalTypes = new Set(v.pieceTypes.filter((p) => p.royal).map((p) => p.id));
-  const captureCapabilityCache = new Map<string, boolean>();
-  v.players.forEach((p, i) => {
-    const owned = v.setup.filter((piece) => piece.ownerId === p.id);
-    if (owned.filter((piece) => royalTypes.has(piece.typeId)).length !== 1)
-      add("INVALID_ROYAL_COUNT", ["players", i], `${p.name} needs exactly one starting royal for capture-the-royal.`);
-    const canCaptureOnBoard = (typeId: string) => {
-      const cacheKey = `${p.id}\0${typeId}`;
-      const cached = captureCapabilityCache.get(cacheKey);
-      if (cached !== undefined) return cached;
-      const pieceType = pieceTypesById.get(typeId);
-      const capable = pieceType?.movements.some((movement) => {
-        if (movement.mode === "move-only") return false;
-        const vectors = movement.kind === "slide" ? movement.directions : movement.offsets;
-        // A slide's first step suffices to prove that some capture edge exists.
-        // Ignore occupancy and reachability: reject only geometric impossibility.
-        return vectors.some((vector) => canLandOnPlayableCell(
-          vector.fileDelta,
-          vector.rankDelta * (movement.frame === "owner" ? p.forwardRank : 1),
-        ));
-      }) ?? false;
-      captureCapabilityCache.set(cacheKey, capable);
-      return capable;
-    };
-    if (![...new Set(owned.map((piece) => piece.typeId))].some(canCaptureOnBoard))
-      add("NO_CAPTURE_MOVEMENT", ["players", i], `${p.name} needs a placed piece with capture-capable movement usable on this board to win.`);
-  });
+  if (v.objectives[0]?.type === "capture-royal") {
+    const royalTypes = new Set(v.pieceTypes.filter((p) => p.royal).map((p) => p.id));
+    const captureCapabilityCache = new Map<string, boolean>();
+    v.players.forEach((p, i) => {
+      const owned = v.setup.filter((piece) => piece.ownerId === p.id);
+      if (owned.filter((piece) => royalTypes.has(piece.typeId)).length !== 1)
+        add("INVALID_ROYAL_COUNT", ["players", i], `${p.name} needs exactly one starting royal for capture-the-royal.`);
+      const canCaptureOnBoard = (typeId: string) => {
+        const cacheKey = `${p.id}\0${typeId}`;
+        const cached = captureCapabilityCache.get(cacheKey);
+        if (cached !== undefined) return cached;
+        const pieceType = pieceTypesById.get(typeId);
+        const capable = pieceType?.movements.some((movement) => {
+          if (movement.mode === "move-only") return false;
+          const vectors = movement.kind === "slide" ? movement.directions : movement.offsets;
+          // A slide's first step suffices to prove that some capture edge exists.
+          // Ignore occupancy and reachability: reject only geometric impossibility.
+          return vectors.some((vector) => canLandOnPlayableCell(
+            vector.fileDelta,
+            vector.rankDelta * (movement.frame === "owner" ? p.forwardRank : 1),
+          ));
+        }) ?? false;
+        captureCapabilityCache.set(cacheKey, capable);
+        return capable;
+      };
+      if (![...new Set(owned.map((piece) => piece.typeId))].some(canCaptureOnBoard))
+        add("NO_CAPTURE_MOVEMENT", ["players", i], `${p.name} needs a placed piece with capture-capable movement usable on this board to win.`);
+    });
+  }
   // Avoid cascading engine diagnostics when references or positions are invalid.
   if (!issues.some((i) => i.severity === "error")) {
     const initial = createInitialState(v);
