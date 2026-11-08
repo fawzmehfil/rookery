@@ -1,0 +1,27 @@
+.objectivePanel,.showcases { border:1px solid #d9dfd0; border-radius:12px; padding:24px; margin:22px 0; background:#fcfdf9; }
+.eyebrow { font-size:11px; font-weight:700; color:#607346; margin:0 0 9px; }
+.objectiveCards,.showcaseCards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.objectiveCards button { text-align:left; display:grid; gap:10px; padding:18px!important; }
+.objectiveCards button[aria-pressed=true] { background:#eff8d9!important; border:2px solid #839f4b!important; }
+.objectiveCards strong { font-size:15px; }
+.objectiveCards span,.showcaseCards p { font-size:12px; line-height:1.6; font-weight:400; }
+.showcaseCards article { background:white; border:1px solid #d5dfc8; padding:18px; border-radius:8px; }
+.showcaseCards h3 { font-size:18px!important; }
+.showcaseCards span { font-size:11px; color:#5b6e47; }
+.help { font-size:12px; line-height:1.7; color:#5f6d52; }
+.help a { text-decoration:underline; }
+.targetColumns { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:18px; }
+.playerTargets { padding:18px; border:1px solid #b6c8d5; border-top:4px solid #416e8f; border-radius:7px; background:white; }
+.playerTargets[data-player="1"] { border-color:#d6be9d; border-top-color:#9b6127; }
+.playerTargets h3 { font-size:16px!important; }
+.targetChips,.actions { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0; font-size:12px; }
+.targetChips button { background:#edf2f6!important; }
+.playerTargets[data-player="1"] .targetChips button { background:#fcf0df!important; }
+.checkbox { display:flex!important; gap:8px!important; align-items:center; margin-top:15px; }
+.checkbox input { width:auto!important; }
+.playerTargets fieldset { border:1px solid #d4dfc8; border-radius:6px; padding:10px; }
+.playerTargets legend { font-size:12px; }
+.confirmation { border:1px solid #d1aa49; border-radius:7px; padding:16px; margin:18px 0; background:#fff5d8; font-size:13px; line-height:1.7; }
+.error { color:#a02d23; font-size:12px; line-height:1.6; }
+.selectionBanner { background:#e4eef4; color:#24475f; padding:14px; border-left:4px solid #416e8f; font-size:13px; line-height:1.5; }
+@media(max-width:680px) { .objectiveCards,.showcaseCards,.targetColumns { grid-template-columns:1fr; } .objectivePanel,.showcases { padding:16px; } }

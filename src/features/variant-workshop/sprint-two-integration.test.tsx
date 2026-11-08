@@ -1,0 +1,32 @@
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, expect, it } from "vitest";
+import { VariantWorkshop } from "./variant-workshop";
+afterEach(cleanup);
+
+it("combines independent custom-piece and objective edits, then safely restores a showcase",async()=>{
+  const user=userEvent.setup();render(<VariantWorkshop/>);
+  await user.click(screen.getByRole("button",{name:"Load The Long Walk"}));
+  await user.click(screen.getByRole("button",{name:"+ Add piece type"}));
+  await user.click(screen.getByRole("button",{name:"Create a blank piece"}));
+  const modal=within(screen.getByRole("dialog",{name:"Create your piece"}));
+  await user.type(modal.getByLabelText("Piece name"),"Unicorn");
+  await user.clear(modal.getByLabelText("Display token"));await user.type(modal.getByLabelText("Display token"),"U");
+  const miniature=modal.getByRole("group",{name:"Movement designer"});
+  await user.click(within(miniature).getByRole("button",{name:"f7"}));
+  await user.click(modal.getByRole("button",{name:"Add type and place copies"}));
+  const board=screen.getByRole("group",{name:"Variant editor board"});
+  await user.click(within(board).getByRole("button",{name:"b1"}));
+  const targets=within(screen.getByRole("region",{name:"White targets"}));
+  await user.click(targets.getByRole("checkbox",{name:"Runner"}));
+  await user.click(targets.getByRole("checkbox",{name:"Unicorn"}));
+  await user.click(screen.getByRole("button",{name:"Open playtest"}));
+  expect(screen.getByText("U")).toBeTruthy();
+  expect(screen.getByRole("button",{name:"b1, White Unicorn"})).toBeTruthy();
+  await user.click(screen.getByRole("button",{name:"Return to editor"}));
+  await user.click(screen.getByRole("button",{name:"Load First Flight"}));
+  expect(screen.getByRole("alert").textContent).toContain("edited draft");
+  await user.click(screen.getByRole("button",{name:"Confirm load First Flight"}));
+  expect((screen.getByLabelText("Palette piece") as HTMLSelectElement).options).toHaveLength(3);
+  expect(screen.queryByLabelText("White target coordinate")).toBeNull();
+},15000);
