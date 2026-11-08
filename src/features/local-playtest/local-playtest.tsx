@@ -13,6 +13,7 @@ import {
 } from "@rookery/rules";
 import { BoardSurface, type BoardMove, type SquareActivation } from "@/components/board-surface";
 import { variantBoardPieces } from "@/features/variant-board/board-adapter";
+import { SessionPieceArt } from "@/features/piece-library/appearance";
 import rookeryLogo from "../../../assets/rookery.png";
 import {
   resetLocalSession,
@@ -162,6 +163,7 @@ export function LocalPlaytest({ initialSession, onReturnToEditor }: LocalPlaytes
               files={variant.board.files}
               ranks={variant.board.ranks}
               pieces={variantBoardPieces(variant, state.pieces)}
+              renderPiece={piece => <SessionPieceArt piece={piece} />}
               label={`${variant.name} playtest board`}
               selectedSquare={selectedPiece ? coordinateToSquare(selectedPiece.at) : null}
               legalDestinations={legalDestinations}
