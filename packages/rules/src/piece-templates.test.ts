@@ -62,7 +62,7 @@ describe("piece template catalog", () => {
 
   it("defines exact, schema-valid movement data for every template", () => {
     for (const template of pieceTemplateCatalog) {
-      expect(template.movements.map(patternSignature)).toEqual(expectedPatterns[template.id as PieceTemplateId]);
+      expect(template.movements.map(patternSignature)).toEqual(expectedPatterns[template.id]);
       expect(pieceTypeDefinitionSchema.safeParse({
         id: template.id,
         name: template.name,

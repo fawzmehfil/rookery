@@ -26,8 +26,6 @@ type PieceTemplateSource = Readonly<{
   movements: readonly MovementPattern[];
 }>;
 
-export type PieceTemplate = PieceTemplateSource;
-
 const orthogonalVectors = orientedVectors(1, 0);
 const diagonalVectors = orientedVectors(1, 1);
 const adjacentVectors = mergeVectors(orthogonalVectors, diagonalVectors);
@@ -235,6 +233,8 @@ const pieceTemplateSources = [
 
 export type PieceTemplateId = (typeof pieceTemplateSources)[number]["id"];
 
+export type PieceTemplate = Omit<PieceTemplateSource, "id"> & Readonly<{ id: PieceTemplateId }>;
+
 export const pieceTemplateCatalog: readonly PieceTemplate[] = Object.freeze(
   pieceTemplateSources.map(freezeTemplate),
 );
@@ -314,7 +314,7 @@ function slide(directions: readonly Vector[]): MovementPattern {
   return { kind: "slide", frame: "board", mode: "move-or-capture", directions };
 }
 
-function freezeTemplate(source: PieceTemplateSource): PieceTemplate {
+function freezeTemplate(source: (typeof pieceTemplateSources)[number]): PieceTemplate {
   const parsed = pieceTypeDefinitionSchema.parse({
     id: source.id,
     name: source.name,
