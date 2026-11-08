@@ -78,5 +78,12 @@ export { createInitialState } from "./create-initial-state";
 export { evaluateOutcome } from "./evaluate-outcome";
 export { getLegalActions } from "./get-legal-actions";
 export { parseVariantDefinition } from "./parse";
+export { createPieceTypeFromTemplate, getPieceTemplate, pieceTemplateCatalog } from "./piece-templates";
+export type {
+  PieceTemplate,
+  PieceTemplateCategory,
+  PieceTemplateId,
+  PieceTemplateTag,
+} from "./piece-templates";
 export { validateVariantDefinition } from "./validate-variant";
 export type { ValidationCode, ValidationIssue } from "./validate-variant";
