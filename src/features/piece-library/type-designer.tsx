@@ -90,6 +90,6 @@ export function TypeDesigner({ type, onChange, token, onTokenChange, forwardRank
         }} /></label>}
       </fieldset>)}
     </details>
-    {(errors.length > 0 || duplicates || !type.movements.length) && <div role="alert" className={styles.error}>{errors.map((e,i)=><p key={i}>{e}</p>)}{duplicates && <p>{duplicates}</p>}{!type.movements.length && <p>Add at least one movement rule before playtesting.</p>}</div>}
+    {(errors.length > 0 || duplicates || !type.movements.length || !type.name.trim()) && <div role="alert" className={styles.error}>{!type.name.trim()&&<p>Give this piece a name before adding or playtesting it.</p>}{errors.map((e,i)=><p key={i}>{e}</p>)}{duplicates && <p>{duplicates}</p>}{!type.movements.length && <p>Add at least one movement rule before playtesting.</p>}</div>}
   </div>;
 }
