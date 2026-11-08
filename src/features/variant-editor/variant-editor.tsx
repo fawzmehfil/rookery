@@ -8,6 +8,9 @@ import { firstFlightVariant } from "@rookery/rules/fixtures";
 import { BoardSurface } from "@/components/board-surface";
 import { variantBoardPieces } from "@/features/variant-board/board-adapter";
 import rookeryLogo from "../../../assets/rookery.png";
+import { ObjectiveEditor } from "@/features/objective-editor/objective-editor";
+import { ShowcasePicker } from "@/features/objective-editor/showcase-picker";
+import { objectiveChoices, objectiveIssues, targetResizeError, toggleTarget } from "@/features/objective-editor/model";
 import { MovementForm, movementDescription } from "./movement-form";
 import { movePiece, placePiece, playtestDraft, removeMovement, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, setMovement, type EditResult } from "./model";
 import styles from "./variant-editor.module.css";
@@ -29,8 +32,9 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   const [ranks, setRanks] = useState(String(initialVariant.board.ranks));
   const [pendingResize, setPendingResize] = useState<{ files: number; ranks: number } | null>(null);
   const [cell, setCell] = useState("a1");
+  const [targetPlayer,setTargetPlayer]=useState<string|null>(null);
   const [message, setMessage] = useState("First Flight is ready to customize. Changes stay in this tab; download a valid draft to keep it.");
-  const issues = useMemo(() => validateVariantDefinition(draft), [draft]);
+  const issues = useMemo(() => [...validateVariantDefinition(draft),...objectiveIssues(draft)], [draft]);
   const blocking = issues.filter(i => i.severity === "error");
   const type = draft.pieceTypes.find(t => t.id === typeId);
   const pattern = type?.movements[Number(ruleIndex)];
@@ -42,6 +46,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   }
 
   function activate(at: Coordinate) {
+    if(targetPlayer){const result=toggleTarget(draft,targetPlayer,at);if(commit(result,`${draft.players.find(p=>p.id===targetPlayer)?.name} targets updated.`))setSelected(at);return;}
     const piece = draft.setup.find(p => sameCell(p.at, at));
     if (tool === "place") { commit(placePiece(draft, at, paletteType, owner), `Placed a piece on ${coordinateToSquare(at)}.`); return; }
     if (tool === "replace") { commit(replacePiece(draft, at, paletteType, owner), `Replaced the piece on ${coordinateToSquare(at)}, preserving its ID.`); return; }
@@ -56,6 +61,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
 
   function requestResize() {
     const f = Number(files), r = Number(ranks);
+    if([f,r].every(n=>Number.isInteger(n)&&n>=1&&n<=26)){const targetError=targetResizeError(draft,f,r);if(targetError){setMessage(targetError);return;}}
     const result = resizeBoard(draft, f, r);
     if (!result.ok && Number.isInteger(f) && Number.isInteger(r) && f >= 1 && f <= 26 && r >= 1 && r <= 26) {
       setPendingResize({ files: f, ranks: r }); return;
@@ -85,9 +91,11 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
         <Image src={rookeryLogo} alt="" width={42} height={42} priority />
       </Link>
       <span className={styles.badge}>Local draft</span>
+      <a href="#objective-panel">Objective settings ↓</a>
       <button className={styles.primary} disabled={blocking.length > 0} onClick={handoff}>{onPlaytest ? "Open playtest" : "Download valid draft"} <span aria-hidden="true">↗</span></button>
     </header>
-    <div className={styles.intro}><div><p className={styles.eyebrow}>Variant workshop · 01</p><h1>Make your next move.</h1><p>Shape the board. Give your pieces a new way to play.</p></div><div className={styles.draftName}><strong>{draft.name}</strong><span>Capture the royal · {draft.players.length} players</span></div></div>
+    <div className={styles.intro}><div><p className={styles.eyebrow}>Variant workshop · 01</p><h1>Make your next move.</h1><p>Shape the board. Give your pieces a new way to play.</p></div><div className={styles.draftName}><strong>{draft.name}</strong><span>{objectiveChoices.find(o=>o.type===draft.objectives[0]?.type)?.name} · {draft.players.length} players</span></div></div>
+    <ShowcasePicker draft={draft} onLoad={next=>{setDraft(next);setSelected(null);setTargetPlayer(null);setTool("select");setOwner(next.players[0]?.id??"");setPaletteType(next.pieceTypes[0]?.id??"");setTypeId(next.pieceTypes[0]?.id??"");setRuleIndex("0");setFiles(String(next.board.files));setRanks(String(next.board.ranks));setPendingResize(null);setCell("a1");setMessage(`${next.name} loaded. Customize its board, pieces and objective.`);}} />
     <div className={styles.workspace}>
       <section className={styles.panel} aria-labelledby="setup-heading">
         <p className={styles.eyebrow}>01 · The canvas</p><h2 id="setup-heading">Board & pieces</h2>
@@ -107,7 +115,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
         </div>}
         <hr />
         <fieldset className={styles.tools}><legend>Board tool</legend>{[["select", "Select / move"], ["place", "Place"], ["replace", "Replace"], ["remove", "Remove"]].map(([value, label]) => <label key={value}>
-          <input type="radio" name="tool" value={value} checked={tool === value} onChange={() => { setTool(value); setSelected(null); }} />{label}
+          <input type="radio" name="tool" value={value} checked={tool === value} onChange={() => { setTool(value); setSelected(null);setTargetPlayer(null); }} />{label}
         </label>)}</fieldset>
         <label>Palette player<select value={owner} onChange={e => setOwner(e.target.value)}>{draft.players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
         <label>Palette piece<select value={paletteType} onChange={e => setPaletteType(e.target.value)}>{draft.pieceTypes.map(t => <option key={t.id} value={t.id}>{t.name}{t.royal ? " · royal" : ""}</option>)}</select></label>
@@ -126,7 +134,8 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
             selectedSquare={selected ? coordinateToSquare(selected) : null} disabledSquares={draft.board.disabledCells.map(coordinateToSquare)}
             onSquareActivate={({ square }) => { const at = squareToCoordinate(square); if (at) activate(at); }} />
         </div></div>
-        <div className={styles.boardBottom}><span>✦ {tool === "select" ? "Select & move" : tool.charAt(0).toUpperCase() + tool.slice(1)} tool</span><span>{selectedPiece?.id ?? "No piece selected"}</span></div>
+        {targetPlayer && <p className={styles.status}>Editing {draft.players.find(p=>p.id===targetPlayer)?.name} targets. Board activations add or remove targets; pieces stay in place.</p>}
+        <div className={styles.boardBottom}><span>✦ {targetPlayer ? "Target selection" : tool === "select" ? "Select & move" : tool.charAt(0).toUpperCase() + tool.slice(1)} tool</span><span>{selectedPiece?.id ?? "No piece selected"}</span></div>
         <p className={styles.help}>Keyboard: Tab to the board, arrows to navigate, Enter or Space to use the selected tool. Escape clears selection.</p>
         <p role="status" className={styles.status}>{message}</p>
       </section>
@@ -142,9 +151,10 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
         <div className={styles.preview}><h3>How this piece moves</h3>{type?.movements.length ? type.movements.map((m, i) => <p key={i}>{movementDescription(m)}</p>) : <p>No rules yet. Add one above.</p>}</div>
       </section>
     </div>
+    <ObjectiveEditor draft={draft} onChange={setDraft} targetPlayer={targetPlayer} onTargetPlayerChange={id=>{setTargetPlayer(id);setSelected(null);setMessage(id?`Select target cells for ${draft.players.find(p=>p.id===id)?.name}.` : "Target selection finished.");if(id)document.querySelector<HTMLButtonElement>('#editor-board [data-square][tabindex="0"]')?.focus();}} />
     <section className={styles.validation} aria-labelledby="validation-heading">
       <div><p className={styles.eyebrow}>03 · Draft check</p><h2 id="validation-heading">{blocking.length ? `${blocking.length} issue${blocking.length === 1 ? "" : "s"} to resolve` : "Ready for the next move."}</h2><p>Drafts stay editable. Only blocking errors prevent handoff.</p></div>
-      <div aria-live="polite">{issues.length ? <ul>{issues.map((issue, i) => <li key={`${issue.code}-${i}`} className={issue.severity === "error" ? styles.error : ""}><strong>{issue.severity === "error" ? "Error" : "Warning"}</strong> · <a href={issue.path[0] === "pieceTypes" ? "#movement-panel" : "#setup-heading"}>{issue.path.join(".") || "variant"}</a>: {issue.message}</li>)}</ul> : <p className={styles.valid}>✓ Shared schema and semantic checks pass.</p>}</div>
+      <div aria-live="polite">{issues.length ? <ul>{issues.map((issue, i) => <li key={`${issue.code}-${i}`} className={issue.severity === "error" ? styles.error : ""}><strong>{issue.severity === "error" ? "Error" : "Warning"}</strong> · <a href={issue.path[0] === "objectives" ? "#objective-panel" : issue.path[0] === "pieceTypes" ? "#movement-panel" : "#setup-heading"}>{issue.path.join(".") || "variant"}</a>: {issue.message}</li>)}</ul> : <p className={styles.valid}>✓ Shared schema and semantic checks pass.</p>}</div>
     </section>
     <footer className={styles.footer}>Your rules. Your board. <span>{onPlaytest ? "Local editor · Playtest without leaving this tab." : "Local editor · Download your draft before leaving."}</span></footer>
   </main>;
