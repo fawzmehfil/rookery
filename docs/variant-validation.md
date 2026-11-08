@@ -8,11 +8,17 @@ string/number segments into the shared `VariantDefinition`. No translation is
 needed by editor or playtest. Keep the draft on errors; block handoff whenever
 `issues.some(issue => issue.severity === "error")`. Warnings are non-blocking.
 
-The existing parser handles shape, supported objectives, bounded coordinates,
+The existing parser handles shape, schema-version-specific objectives, bounded coordinates,
 primitive slide directions, adjacent step offsets, nonzero vectors, frames,
 capture modes, and distances. Parser failures become `SCHEMA_INVALID` issues at
 their original paths. Semantic traversal starts only after parsing succeeds.
 Input is ordinary serialized data, never executable user rules.
+
+Schema version 1 accepts only capture-the-royal. Version 2 also accepts
+reach-target and eliminate-all definitions. Parsing never silently upgrades
+version 1 data. Sprint 2 Task S2-03 adds the objective-specific semantic rules
+for the new definitions; until then, the existing royal-count and capture-edge
+checks run only for capture-the-royal so new objectives are not misdiagnosed.
 
 Semantic errors accumulate deterministically: duplicate player/type/piece IDs;
 turn-order duplicates, unknown players and missing players; disabled cells in
@@ -84,7 +90,7 @@ precondition errors, rejects well-formed movement-illegal input as
 the current `getLegalActions` result. The confirmed kernel remains internal.
 No new public transition API is introduced here.
 
-Validation checks structural contradictions, objective royal counts, each player's
+For capture-the-royal, validation checks structural contradictions, objective royal counts, each player's
 capture capability (including whether any capture vector can land on a playable
 cell anywhere on the board) and whether the starting player has legal actions. It does not
 solve arbitrary future game reachability, guarantee a forced win, or add stalemate

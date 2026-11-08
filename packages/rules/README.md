@@ -10,6 +10,29 @@ Framework-independent contracts and deterministic rules for Rookery variants.
 - `RulesEngine` defines the final public engine surface. Legal-move generation and public action validation are intentionally separate from the confirmed-action transition kernel.
 - Engine behavior must not depend on React, Next.js, browser APIs, clocks, randomness, or mutable global state.
 
+## Schema versions and objectives
+
+- Schema version 1 remains the immutable Sprint 1 contract and supports only `capture-royal`.
+- Schema version 2 adds the `reach-target` and `eliminate-all` objective definitions while continuing to accept `capture-royal`.
+- `objectives` remains a one-item array in version 2. Combining objectives is intentionally deferred.
+- `reach-target` stores two player-target entries, one or more cells per entry, optional eligible piece-type IDs, and `requireAction: true`. An initial placement on a target does not win; S2-02 evaluates only an accepted action that enters a target.
+- `eliminate-all` is a marker objective for the two-player game. S2-02 owns its transition and outcome behavior.
+- Parsing never silently upgrades version 1 data. An editor may explicitly create a version 2 draft when the creator selects a current objective; catalog-only changes can preserve the document version when their ordinary movement data is already compatible.
+- Future incompatible document changes require a new schema version and an explicit migration function. Published definitions and games must keep their original serialized version.
+
+The engine currently evaluates `capture-royal`. Until S2-02 lands, current objectives parse, initialize safely, and return no inferred outcome rather than being misinterpreted as royal capture.
+
+## Piece-template catalog
+
+`pieceTemplateCatalog` exports immutable, framework-independent presets for Sovereign/King, Tower/Rook, Bishop, Queen, Hopper/Knight, Pawn, Chancellor/Empress/Marshal, Archbishop/Cardinal/Princess, Amazon, Centaur/General, Wazir, Ferz, Alfil, Dabbaba, Camel, Zebra, and Nightrider.
+
+- Templates are ordinary movement data plus discovery metadata: stable ID, primary name, aliases, description, category, tags, token fallback, and default royal flag.
+- `createPieceTypeFromTemplate` returns a fresh validated copy. Variants never retain a live reference to catalog state, and engine behavior never branches on template names.
+- Symmetric templates are board-relative and default to `move-or-capture`. Pawn is owner-relative with a forward `move-only` step and diagonal `capture-only` steps.
+- Compound pieces contain the union of component patterns; they still receive one action per turn.
+- Nightrider uses ordinary slide directions based on every oriented knight vector, so occupied landing points block its ray normally.
+- Hurdle/screen captures, locust/rifle capture, teleporting, swapping, multi-action pieces, promotion, castling, and en passant require future reviewed contracts and are not catalog presets.
+
 ## Legal actions
 
 `getLegalActions(variant, state)` returns every movement-legal `MoveAction` for the active player. `applyAction(variant, state, action)` is the safe public mutation path: it reports generic state/action errors, confirms an exact match in the current legal-action set, and only then invokes the internal confirmed-action kernel. An otherwise well-formed illegal move returns `ACTION_NOT_LEGAL`; rejected actions never change state.
@@ -43,3 +66,10 @@ Its demonstration sequence is:
 7. White tower `b4 → b3`, capturing the black hopper
 8. Black tower `e2 → e1`, capturing the white hopper
 9. White tower `b3 → b5`, capturing the black sovereign and winning
+
+## Sprint 2 contract fixtures
+
+- **The Long Walk** is a 3×3 owner-relative race with mirrored `reach-target` configuration. White's runner demonstrates `a1 → a2 → a3`; Black has the mirrored target on `c1`.
+- **Last Flock Standing** is a 5×5 `eliminate-all` fixture using Chancellor, Camel, and Nightrider catalog data.
+
+These fixtures establish serialized contracts only. Their new victory behavior belongs to S2-02.

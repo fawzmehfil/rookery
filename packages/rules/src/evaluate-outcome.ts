@@ -2,6 +2,7 @@ import type { GameOutcome, GameState, VariantDefinition } from "./types";
 
 export function evaluateOutcome(variant: VariantDefinition, state: GameState): GameOutcome | null {
   if (state.outcome) return state.outcome;
+  if (variant.objectives[0]?.type !== "capture-royal") return null;
 
   const royalTypeIds = new Set(variant.pieceTypes.filter(({ royal }) => royal).map(({ id }) => id));
   const missingRoyals = variant.players.flatMap(({ id: playerId }) => {

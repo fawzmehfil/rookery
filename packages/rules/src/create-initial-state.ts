@@ -102,18 +102,21 @@ export function createInitialState(variant: VariantDefinition): EngineResult<Gam
     occupiedCells.add(cell);
   }
 
+  const objective = definition.objectives[0];
   const royalTypeIds = new Set(definition.pieceTypes.filter(({ royal }) => royal).map(({ id }) => id));
 
-  for (const playerId of playerIds) {
-    const royalCount = definition.setup.filter(
-      ({ ownerId, typeId }) => ownerId === playerId && royalTypeIds.has(typeId),
-    ).length;
+  if (objective?.type === "capture-royal") {
+    for (const playerId of playerIds) {
+      const royalCount = definition.setup.filter(
+        ({ ownerId, typeId }) => ownerId === playerId && royalTypeIds.has(typeId),
+      ).length;
 
-    if (royalCount !== 1) {
-      return invalidVariant("Capture-the-royal requires exactly one starting royal per player.", {
-        playerId,
-        royalCount,
-      });
+      if (royalCount !== 1) {
+        return invalidVariant("Capture-the-royal requires exactly one starting royal per player.", {
+          playerId,
+          royalCount,
+        });
+      }
     }
   }
 

@@ -58,6 +58,21 @@ describe("capture-the-royal", () => {
   });
 });
 
+it("does not evaluate current objectives before their engine implementation", () => {
+  const variant = {
+    ...firstFlightVariant,
+    schemaVersion: 2,
+    objectives: [{ type: "eliminate-all" }],
+  } as const;
+  const state = initialState();
+
+  expect(evaluateOutcome(variant, {
+    ...state,
+    variantId: variant.id,
+    pieces: state.pieces.filter(({ ownerId }) => ownerId !== "black"),
+  })).toBeNull();
+});
+
 function initialState(): GameState {
   const result = createInitialState(firstFlightVariant);
   if (!result.ok) throw new Error(result.error.message);
