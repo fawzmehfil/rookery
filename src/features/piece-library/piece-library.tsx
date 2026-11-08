@@ -13,22 +13,29 @@ export function PieceLibrary({ draft, onAdd, onClose }: { draft: VariantDefiniti
   const [template,setTemplate]=useState<PieceTemplate | null>(null);
   const [creating,setCreating]=useState<PieceTypeDefinition | null>(null); const [token,setToken]=useState("✦");
   const detailRef = useRef<HTMLElement>(null);
+  const creatorRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const creatingMode = creating !== null;
   useEffect(() => { if (template) detailRef.current?.focus(); }, [template]);
+  useEffect(() => { if(creatingMode) creatorRef.current?.querySelector<HTMLInputElement>("input")?.focus();else searchRef.current?.focus(); }, [creatingMode]);
   const results=searchTemplates(query,category);
   function start(source?: PieceTemplate | PieceTypeDefinition) {
     const type = source && "defaultToken" in source ? { id:source.id,name:source.name,royal:source.defaultRoyal,movements:structuredClone(source.movements) }
       : source ? structuredClone(source) : {id:"custom",name:"",royal:false,movements:[]};
     setToken(source && "defaultToken" in source ? source.defaultToken : "✦"); setCreating(type);
   }
-  function add(type: PieceTypeDefinition, chosenToken: string) { onAdd({...structuredClone(type), id: uniqueTypeId(type.id === "custom" ? type.name : type.id,draft.pieceTypes)},chosenToken); }
+  function add(type: PieceTypeDefinition, chosenToken: string) {
+    const parsed=pieceTypeDefinitionSchema.safeParse({...structuredClone(type),id:uniqueTypeId(type.id==="custom"?type.name:type.id,draft.pieceTypes)});
+    if(parsed.success)onAdd(parsed.data,chosenToken);
+  }
   return <EditorModal title={creating ? "Create your piece" : "Piece library"} onClose={onClose}>
     {creating ? <>
       <p className={styles.hint}>1 · Name & token → 2 · Draw movement → 3 · Review → 4 · Add & place</p>
-      <TypeDesigner type={creating} onChange={setCreating} token={token} onTokenChange={setToken} forwardRanks={draft.players.map(p=>p.forwardRank)} />
+      <div ref={creatorRef}><TypeDesigner type={creating} onChange={setCreating} token={token} onTokenChange={setToken} forwardRanks={draft.players.map(p=>p.forwardRank)} /></div>
       <div className={styles.actions}><button onClick={()=>setCreating(null)}>Back to library</button><button disabled={!pieceTypeDefinitionSchema.safeParse(creating).success || !!duplicateMovement(creating) || draft.pieceTypes.length >= 128} onClick={()=>add(creating,token)}>Add type and place copies</button></div>
     </> : <>
       <p>Find a familiar piece, discover something unusual, or invent your own.</p>
-      <div className={styles.libraryToolbar}><label>Search pieces<input value={query} onChange={e=>{setQuery(e.target.value);setCategory("all");}} placeholder="Try Empress, diagonal, or three cells" /></label><button onClick={()=>start()}>Create a blank piece</button></div>
+      <div className={styles.libraryToolbar}><label>Search pieces<input ref={searchRef} value={query} onChange={e=>{setQuery(e.target.value);setCategory("all");}} placeholder="Try Empress, diagonal, or three cells" /></label><button onClick={()=>start()}>Create a blank piece</button></div>
       <div className={styles.filters} role="group" aria-label="Piece categories"><button aria-pressed={category==="all"} onClick={()=>{setCategory("all");setTemplate(null);}}>All pieces</button>{categories.map(([value,label])=><button key={value} aria-pressed={category===value} onClick={()=>{setCategory(value);setTemplate(null);}}>{label}</button>)}</div>
       {template && <section ref={detailRef} tabIndex={-1} className={styles.templateDetail} aria-label={`${template.name} preview`}>
         <div><h3>{template.name}{template.aliases.length ? ` · ${template.aliases.join(", ")}`:""}</h3><p>{template.description}</p><p className={styles.hint}>Example: the highlighted cells are destinations from the center on an empty board. Pawn has separate forward moves and diagonal captures; first-move double steps, promotion and en passant are not included.</p><div className={styles.actions}><button onClick={()=>start(template)}>Customize {template.name}</button><button disabled={draft.pieceTypes.length>=128} onClick={()=>add({id:template.id,name:template.name,royal:template.defaultRoyal,movements:template.movements},template.defaultToken)}>Add {template.name}</button></div></div>

@@ -27,7 +27,7 @@ only on explicit approval. Catalog, fixtures and unrelated types are never mutat
 ## Verification
 
 Baseline: `npm ci` and `npm run check` passed with 55 UI/model tests and 114 rules
-tests (one opt-in performance test skipped). Final library suite: 74 UI/model
+tests (one opt-in performance test skipped). Final library suite: 75 UI/model
 tests plus the unchanged 114 rules tests pass; lint, app/rules typechecks and
 production build pass. `npm run audit:production` reports zero vulnerabilities;
 full audit retains eight moderate baseline development-toolchain findings.

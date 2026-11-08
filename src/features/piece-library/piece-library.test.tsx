@@ -9,6 +9,18 @@ import { TypeDesigner } from "./type-designer";
 import { VariantEditor } from "@/features/variant-editor/variant-editor";
 afterEach(cleanup);
 
+it("focuses the creator's name field, explains a missing name, and restores focus on Escape",async()=>{
+  const user=userEvent.setup();render(<VariantEditor/>);
+  const trigger=screen.getByRole("button",{name:"+ Add piece type"});await user.click(trigger);
+  await user.click(screen.getByRole("button",{name:"Create a blank piece"}));
+  const creator=within(screen.getByRole("dialog",{name:"Create your piece"}));
+  expect(document.activeElement).toBe(creator.getByLabelText("Piece name"));
+  expect(creator.getByRole("alert").textContent).toContain("Give this piece a name");
+  // jsdom does not synthesize native dialog Escape; dispatch the cancel event.
+  fireEvent(screen.getByRole("dialog"),new Event("cancel",{bubbles:true,cancelable:true}));
+  expect(screen.queryByRole("dialog")).toBeNull();expect(document.activeElement).toBe(trigger);
+});
+
 it("discovers Empress by alias, previews Chancellor, and adds an independent type",async()=>{
   const user=userEvent.setup();const add=vi.fn();render(<PieceLibrary draft={firstFlightVariant} onAdd={add} onClose={()=>{}} />);
   await user.type(screen.getByLabelText("Search pieces"),"Empress");
