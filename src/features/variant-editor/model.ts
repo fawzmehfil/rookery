@@ -2,6 +2,7 @@ import {
   movementPatternSchema, parseVariantDefinition, validateVariantDefinition,
   type Coordinate, type MovementPattern, type VariantDefinition,
 } from "@rookery/rules";
+import { isTarget, objectiveIssues, targetResizeError } from "@/features/objective-editor/model";
 
 export type EditResult = { ok: true; value: VariantDefinition } | { ok: false; message: string };
 const fail = (message: string): EditResult => ({ ok: false, message });
@@ -20,6 +21,7 @@ export function resizeImpact(v: VariantDefinition, files: number, ranks: number)
 
 export function resizeBoard(v: VariantDefinition, files: number, ranks: number, confirmed = false): EditResult {
   if (![files, ranks].every(n => Number.isInteger(n) && n >= 1 && n <= 26)) return fail("Files and ranks must be whole numbers from 1 to 26.");
+  const targetError=targetResizeError(v,files,ranks);if(targetError)return fail(targetError);
   const impact = resizeImpact(v, files, ranks);
   if (!confirmed && (impact.pieces.length || impact.disabledCells.length)) return fail("Confirm the resize before removing pieces or disabled cells.");
   return success({ ...v, board: { ...v.board, files, ranks,
@@ -56,6 +58,7 @@ export function removePiece(v: VariantDefinition, at: Coordinate): EditResult {
 
 export function setCellDisabled(v: VariantDefinition, at: Coordinate, disabled: boolean): EditResult {
   if (!onBoard(v, at)) return fail("Choose a cell inside the board.");
+  if(disabled && isTarget(v,at)) return fail("Remove this target in Objective settings before disabling its cell.");
   if (disabled && v.setup.some(p => sameCell(p.at, at))) return fail("Remove or move this piece before disabling its cell.");
   return success({ ...v, board: { ...v.board, disabledCells: [
     ...v.board.disabledCells.filter(cell => !sameCell(cell, at)), ...(disabled ? [{ ...at }] : []),
@@ -80,5 +83,5 @@ export function removeMovement(v: VariantDefinition, typeId: string, index: numb
 /** Exact shared contract for Task 07; a bad draft is retained by the editor. */
 export function playtestDraft(v: VariantDefinition): VariantDefinition | null {
   const parsed = parseVariantDefinition(v);
-  return parsed.ok && !validateVariantDefinition(v).some(i => i.severity === "error") ? v : null;
+  return parsed.ok && ![...validateVariantDefinition(v),...objectiveIssues(v)].some(i => i.severity === "error") ? v : null;
 }
