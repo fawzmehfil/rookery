@@ -67,16 +67,17 @@ it("shows disabled cells, rejects overlap, and keeps invalid drafts for correcti
 it("edits a rule without overwriting another type and rejects zero vectors locally", async () => {
   const user = userEvent.setup(); render(<VariantEditor />);
   await user.selectOptions(screen.getByLabelText("Piece type to edit"), "tower");
+  await user.selectOptions(screen.getByLabelText("Rule to edit"), "0");
   await user.selectOptions(screen.getByLabelText("Direction frame"), "owner");
-  await user.click(screen.getByRole("button", { name: "Save movement rule" }));
   expect(screen.getByText(/Forward follows the owner's direction/)).toBeTruthy();
   await user.selectOptions(screen.getByLabelText("Piece type to edit"), "hopper");
   expect((screen.getByLabelText("Direction frame") as HTMLSelectElement).value).toBe("board");
   await user.selectOptions(screen.getByLabelText("Piece type to edit"), "tower");
+  await user.selectOptions(screen.getByLabelText("Rule to edit"), "0");
   expect((screen.getByLabelText("Direction frame") as HTMLSelectElement).value).toBe("owner");
-  fireEvent.change(screen.getByLabelText("Across 1"), { target: { value: "0" } });
-  fireEvent.change(screen.getByLabelText("Forward 1"), { target: { value: "0" } });
-  await user.click(screen.getByRole("button", { name: "Save movement rule" }));
+  await user.click(screen.getByText("Advanced: edit movement vectors"));
+  fireEvent.change(screen.getByLabelText("Across 1.1"), { target: { value: "0" } });
+  fireEvent.change(screen.getByLabelText("Forward 1.1"), { target: { value: "0" } });
   expect(screen.getByRole("alert").textContent).toContain("cannot be zero");
-  expect(screen.getByText(/Forward follows the owner's direction/)).toBeTruthy();
+  expect(screen.getByText(/Rule 1 needs correction in Advanced/)).toBeTruthy();
 });
