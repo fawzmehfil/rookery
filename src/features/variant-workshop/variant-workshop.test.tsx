@@ -17,8 +17,8 @@ it("edits board, placement, and movement before entering a validated local playt
   await user.click(screen.getByRole("radio", { name: "Place" }));
   await user.click(editorSquare("f1"));
   await user.selectOptions(screen.getByLabelText("Piece type to edit"), "tower");
+  await user.selectOptions(screen.getByLabelText("Rule to edit"), "0");
   await user.selectOptions(screen.getByLabelText("Direction frame"), "owner");
-  await user.click(screen.getByRole("button", { name: "Save movement rule" }));
 
   expect(screen.getByText("✓ Shared schema and semantic checks pass.")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "Open playtest" }));
@@ -32,6 +32,7 @@ it("edits board, placement, and movement before entering a validated local playt
   expect(within(editorBoard()).getAllByRole("button")).toHaveLength(30);
   expect(editorSquare("f1").getAttribute("aria-label")).toContain("White Tower");
   await user.selectOptions(screen.getByLabelText("Piece type to edit"), "tower");
+  await user.selectOptions(screen.getByLabelText("Rule to edit"), "0");
   expect((screen.getByLabelText("Direction frame") as HTMLSelectElement).value).toBe("owner");
 });
 

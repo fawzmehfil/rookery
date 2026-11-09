@@ -8,8 +8,12 @@ import { firstFlightVariant } from "@rookery/rules/fixtures";
 import { BoardSurface } from "@/components/board-surface";
 import { variantBoardPieces } from "@/features/variant-board/board-adapter";
 import rookeryLogo from "../../../assets/rookery.png";
-import { MovementForm, movementDescription } from "./movement-form";
-import { movePiece, placePiece, playtestDraft, removeMovement, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, setMovement, type EditResult } from "./model";
+import { PieceLibrary } from "@/features/piece-library/piece-library";
+import { TypeDesigner } from "@/features/piece-library/type-designer";
+import { EditorModal } from "@/features/piece-library/modal";
+import { duplicateMovement, removeType } from "@/features/piece-library/model";
+import { SessionPieceArt, usePieceAppearance } from "@/features/piece-library/appearance";
+import { movePiece, placePiece, playtestDraft, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, type EditResult } from "./model";
 import styles from "./variant-editor.module.css";
 
 export type VariantEditorProps = {
@@ -24,16 +28,19 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   const [owner, setOwner] = useState(initialVariant.players[0]?.id ?? "");
   const [paletteType, setPaletteType] = useState(initialVariant.pieceTypes[0]?.id ?? "");
   const [typeId, setTypeId] = useState(initialVariant.pieceTypes[0]?.id ?? "");
-  const [ruleIndex, setRuleIndex] = useState("0");
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [removingType, setRemovingType] = useState<string | null>(null);
+  const { tokens, setToken } = usePieceAppearance();
   const [files, setFiles] = useState(String(initialVariant.board.files));
   const [ranks, setRanks] = useState(String(initialVariant.board.ranks));
   const [pendingResize, setPendingResize] = useState<{ files: number; ranks: number } | null>(null);
   const [cell, setCell] = useState("a1");
   const [message, setMessage] = useState("First Flight is ready to customize. Changes stay in this tab; download a valid draft to keep it.");
-  const issues = useMemo(() => validateVariantDefinition(draft), [draft]);
+  const issues = useMemo(() => [...validateVariantDefinition(draft), ...draft.pieceTypes.flatMap((t,i) => {
+    const message=duplicateMovement(t); return message ? [{code:"SCHEMA_INVALID" as const,severity:"error" as const,path:["pieceTypes",i,"movements"],message}] : [];
+  })], [draft]);
   const blocking = issues.filter(i => i.severity === "error");
   const type = draft.pieceTypes.find(t => t.id === typeId);
-  const pattern = type?.movements[Number(ruleIndex)];
   const selectedPiece = draft.setup.find(p => selected && sameCell(p.at, selected));
 
   function commit(result: EditResult, text: string) {
@@ -64,6 +71,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   }
 
   function handoff() {
+    if (blocking.length) { setMessage("Resolve blocking issues before playtest."); return; }
     const valid = playtestDraft(draft);
     if (!valid) { setMessage("Resolve blocking issues before handing off this draft."); return; }
     if (onPlaytest) {
@@ -109,6 +117,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
         <fieldset className={styles.tools}><legend>Board tool</legend>{[["select", "Select / move"], ["place", "Place"], ["replace", "Replace"], ["remove", "Remove"]].map(([value, label]) => <label key={value}>
           <input type="radio" name="tool" value={value} checked={tool === value} onChange={() => { setTool(value); setSelected(null); }} />{label}
         </label>)}</fieldset>
+        <button className={styles.primary} onClick={() => setLibraryOpen(true)}>+ Add piece type</button>
         <label>Palette player<select value={owner} onChange={e => setOwner(e.target.value)}>{draft.players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
         <label>Palette piece<select value={paletteType} onChange={e => setPaletteType(e.target.value)}>{draft.pieceTypes.map(t => <option key={t.id} value={t.id}>{t.name}{t.royal ? " · royal" : ""}</option>)}</select></label>
         <p className={styles.help}>Place adds to empty cells. Replace changes an occupied cell and keeps its piece ID. Select a piece, then an empty cell to move it.</p>
@@ -123,6 +132,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
         <div className={styles.boardTop}><h2 id="board-heading">{draft.name}</h2><span>{draft.board.files} × {draft.board.ranks} / {draft.setup.length} pieces</span></div>
         <div className={styles.boardScroll} style={{ maxHeight: draft.board.ranks > draft.board.files * 2 ? "74vh" : undefined }}><div className={styles.boardFrame} style={{ minWidth: Math.max(240, draft.board.files * 30) }}>
           <BoardSurface files={draft.board.files} ranks={draft.board.ranks} pieces={variantBoardPieces(draft, draft.setup)} label="Variant editor board"
+            renderPiece={piece => <SessionPieceArt piece={piece} />}
             selectedSquare={selected ? coordinateToSquare(selected) : null} disabledSquares={draft.board.disabledCells.map(coordinateToSquare)}
             onSquareActivate={({ square }) => { const at = squareToCoordinate(square); if (at) activate(at); }} />
         </div></div>
@@ -132,14 +142,10 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
       </section>
       <section className={styles.panel} aria-labelledby="movement-heading" id="movement-panel">
         <p className={styles.eyebrow}>02 · Movement</p><h2 id="movement-heading">Movement rules</h2>
-        <label>Piece type to edit<select value={typeId} onChange={e => { setTypeId(e.target.value); setRuleIndex("0"); }}>{draft.pieceTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
-        <label>Rule to edit<select value={ruleIndex} onChange={e => setRuleIndex(e.target.value)}>{type?.movements.map((m, i) => <option key={i} value={i}>Rule {i + 1} · {m.kind}</option>)}<option value="new">+ New movement rule</option></select></label>
-        <MovementForm key={`${typeId}-${ruleIndex}-${JSON.stringify(pattern)}`} initial={pattern} onSave={rule => {
-          const index = ruleIndex === "new" ? type?.movements.length ?? 0 : Number(ruleIndex);
-          if (commit(setMovement(draft, typeId, index, rule), "Movement rule saved.")) setRuleIndex(String(index));
-        }} />
-        {pattern && <button className={styles.danger} onClick={() => { setDraft(removeMovement(draft, typeId, Number(ruleIndex))); setRuleIndex("new"); setMessage("Rule removed. Add a rule if this piece has none."); }}>Delete this rule</button>}
-        <div className={styles.preview}><h3>How this piece moves</h3>{type?.movements.length ? type.movements.map((m, i) => <p key={i}>{movementDescription(m)}</p>) : <p>No rules yet. Add one above.</p>}</div>
+        <label>Piece type to edit<select value={typeId} onChange={e => setTypeId(e.target.value)}>{draft.pieceTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+        {type ? <><TypeDesigner key={typeId} type={type} onChange={next => setDraft(current => ({...current,pieceTypes:current.pieceTypes.map(t=>t.id===typeId ? {...next,id:t.id}:t)}))}
+          token={tokens[typeId] ?? ""} onTokenChange={token => setToken(typeId,token)} forwardRanks={draft.players.map(p=>p.forwardRank)} />
+          <button className={styles.danger} onClick={()=>setRemovingType(type.id)}>Remove piece type</button></> : <p>Add a piece type to begin designing movement.</p>}
       </section>
     </div>
     <section className={styles.validation} aria-labelledby="validation-heading">
@@ -147,5 +153,11 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
       <div aria-live="polite">{issues.length ? <ul>{issues.map((issue, i) => <li key={`${issue.code}-${i}`} className={issue.severity === "error" ? styles.error : ""}><strong>{issue.severity === "error" ? "Error" : "Warning"}</strong> · <a href={issue.path[0] === "pieceTypes" ? "#movement-panel" : "#setup-heading"}>{issue.path.join(".") || "variant"}</a>: {issue.message}</li>)}</ul> : <p className={styles.valid}>✓ Shared schema and semantic checks pass.</p>}</div>
     </section>
     <footer className={styles.footer}>Your rules. Your board. <span>{onPlaytest ? "Local editor · Playtest without leaving this tab." : "Local editor · Download your draft before leaving."}</span></footer>
+    {libraryOpen && <PieceLibrary draft={draft} onClose={()=>setLibraryOpen(false)} onAdd={(added,token)=>{
+      setDraft(current=>({...current,pieceTypes:[...current.pieceTypes,added]}));setPaletteType(added.id);setTypeId(added.id);setToken(added.id,token);setTool("place");setSelected(null);setLibraryOpen(false);setMessage(`${added.name} added. Activate an empty board cell to place a copy.`);
+    }} />}
+    {removingType && <EditorModal title="Remove piece type" onClose={()=>setRemovingType(null)}><p>Remove {draft.pieceTypes.find(t=>t.id===removingType)?.name}? This also removes {draft.setup.filter(p=>p.typeId===removingType).length} placed piece(s). This cannot leave broken setup references.</p><button onClick={()=>setRemovingType(null)}>Cancel removal</button><button onClick={()=>{
+      const next=removeType(draft,removingType);setDraft(next);setTypeId(next.pieceTypes[0]?.id??"");setPaletteType(next.pieceTypes[0]?.id??"");setSelected(null);setRemovingType(null);setMessage("Piece type and its placements removed.");
+    }}>Remove type and placements</button></EditorModal>}
   </main>;
 }

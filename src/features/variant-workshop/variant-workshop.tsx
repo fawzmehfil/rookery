@@ -9,9 +9,14 @@ import {
   type SessionStartError,
 } from "@/features/local-playtest/local-session";
 import { VariantEditor } from "@/features/variant-editor/variant-editor";
+import { PieceAppearanceProvider } from "@/features/piece-library/appearance";
 
 /** Owns the exact draft and one disposable local engine session for this route. */
 export function VariantWorkshop() {
+  return <PieceAppearanceProvider><WorkshopSession /></PieceAppearanceProvider>;
+}
+
+function WorkshopSession() {
   const [draft, setDraft] = useState<VariantDefinition | undefined>(undefined);
   const [session, setSession] = useState<LocalSession | null>(null);
 
