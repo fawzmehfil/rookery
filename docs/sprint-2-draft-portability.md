@@ -217,8 +217,13 @@ Repository guarantees:
   valid saved draft is kept.
 - **Change detection:** unchanged drafts are not written (see repository guarantees).
 - **Flush:** a pending save is written immediately on `pagehide`, on
-  `visibilitychange` to hidden, before opening playtest, and after a successful
-  import. Flushing on page unload is best-effort.
+  `visibilitychange` to hidden, when the workshop unmounts (for example, when
+  navigating home), before opening playtest, and after a successful import.
+  Flushing on page unload is best-effort.
+- **Initial draft:** the editor reports its starting draft on mount; that report
+  is not treated as an edit, so loading or restoring never writes by itself.
+- **After a failed recovery:** autosave is paused until the first real edit, so
+  the unreadable stored value stays available for "Download stored data".
 - **Stale results:** every change, import, reset, and undo increments a revision
   number. A load or save result is applied only if its revision is still current,
   so a late result can never replace a newer in-memory draft.

@@ -1,13 +1,15 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { VariantWorkshop } from "./variant-workshop";
 
+beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 
 it("edits board, placement, and movement before entering a validated local playtest", async () => {
   const user = userEvent.setup();
   render(<VariantWorkshop />);
+  await screen.findByRole("group", { name: "Variant editor board" });
   const editorBoard = () => screen.getByRole("group", { name: "Variant editor board" });
   const editorSquare = (name: string) => editorBoard().querySelector<HTMLButtonElement>(`[data-square="${name}"]`)!;
 
@@ -39,7 +41,7 @@ it("edits board, placement, and movement before entering a validated local playt
 it("keeps a blocking draft editable and links its issue back to the editor field", async () => {
   const user = userEvent.setup();
   render(<VariantWorkshop />);
-  const board = screen.getByRole("group", { name: "Variant editor board" });
+  const board = await screen.findByRole("group", { name: "Variant editor board" });
   const royal = board.querySelector<HTMLButtonElement>('[data-square="c1"]')!;
 
   await user.click(screen.getByRole("radio", { name: "Remove" }));
