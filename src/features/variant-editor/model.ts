@@ -3,6 +3,30 @@ import {
   type Coordinate, type MovementPattern, type VariantDefinition,
 } from "@rookery/rules";
 import { isTarget, objectiveIssues, targetResizeError } from "@/features/objective-editor/model";
+import { duplicateMovement } from "@/features/piece-library/model";
+
+export type EditorIssue = Readonly<{
+  code: string;
+  severity: "error" | "warning";
+  message: string;
+  path: readonly (string | number)[];
+}>;
+
+/**
+ * The single editor validity gate shared by the issue list, playtest handoff,
+ * autosave, recovery, and import. When S2-03 moves objective and duplicate
+ * pattern rules into validateVariantDefinition, remove the supplements here.
+ */
+export function draftIssues(v: VariantDefinition): readonly EditorIssue[] {
+  return [
+    ...validateVariantDefinition(v),
+    ...objectiveIssues(v),
+    ...v.pieceTypes.flatMap((type, index) => {
+      const message = duplicateMovement(type);
+      return message ? [{ code: "SCHEMA_INVALID", severity: "error" as const, path: ["pieceTypes", index, "movements"], message }] : [];
+    }),
+  ];
+}
 
 export type EditResult = { ok: true; value: VariantDefinition } | { ok: false; message: string };
 const fail = (message: string): EditResult => ({ ok: false, message });
@@ -83,5 +107,5 @@ export function removeMovement(v: VariantDefinition, typeId: string, index: numb
 /** Exact shared contract for Task 07; a bad draft is retained by the editor. */
 export function playtestDraft(v: VariantDefinition): VariantDefinition | null {
   const parsed = parseVariantDefinition(v);
-  return parsed.ok && ![...validateVariantDefinition(v),...objectiveIssues(v)].some(i => i.severity === "error") ? v : null;
+  return parsed.ok && !draftIssues(v).some(i => i.severity === "error") ? v : null;
 }

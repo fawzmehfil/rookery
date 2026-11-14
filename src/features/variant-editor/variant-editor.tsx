@@ -3,20 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { coordinateToSquare, squareToCoordinate, validateVariantDefinition, type Coordinate, type VariantDefinition } from "@rookery/rules";
+import { coordinateToSquare, squareToCoordinate, type Coordinate, type VariantDefinition } from "@rookery/rules";
 import { firstFlightVariant } from "@rookery/rules/fixtures";
 import { BoardSurface } from "@/components/board-surface";
 import { variantBoardPieces } from "@/features/variant-board/board-adapter";
 import rookeryLogo from "../../../assets/rookery.png";
 import { ObjectiveEditor } from "@/features/objective-editor/objective-editor";
 import { ShowcasePicker } from "@/features/objective-editor/showcase-picker";
-import { objectiveChoices, objectiveIssues, targetResizeError, toggleTarget } from "@/features/objective-editor/model";
+import { objectiveChoices, targetResizeError, toggleTarget } from "@/features/objective-editor/model";
 import { PieceLibrary } from "@/features/piece-library/piece-library";
 import { TypeDesigner } from "@/features/piece-library/type-designer";
 import { EditorModal } from "@/features/piece-library/modal";
-import { duplicateMovement, removeType } from "@/features/piece-library/model";
+import { removeType } from "@/features/piece-library/model";
 import { SessionPieceArt, usePieceAppearance } from "@/features/piece-library/appearance";
-import { movePiece, placePiece, playtestDraft, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, type EditResult } from "./model";
+import { draftIssues, movePiece, placePiece, playtestDraft, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, type EditResult } from "./model";
 import styles from "./variant-editor.module.css";
 
 export type VariantEditorProps = {
@@ -41,9 +41,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   const [targetPlayer,setTargetPlayer]=useState<string|null>(null);
   const [editorRevision,setEditorRevision]=useState(0);
   const [message, setMessage] = useState("First Flight is ready to customize. Changes stay in this tab; download a valid draft to keep it.");
-  const issues = useMemo(() => [...validateVariantDefinition(draft), ...objectiveIssues(draft), ...draft.pieceTypes.flatMap((t,i) => {
-    const message=duplicateMovement(t); return message ? [{code:"SCHEMA_INVALID" as const,severity:"error" as const,path:["pieceTypes",i,"movements"],message}] : [];
-  })], [draft]);
+  const issues = useMemo(() => draftIssues(draft), [draft]);
   const blocking = issues.filter(i => i.severity === "error");
   const type = draft.pieceTypes.find(t => t.id === typeId);
   const selectedPiece = draft.setup.find(p => selected && sameCell(p.at, selected));

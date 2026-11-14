@@ -114,12 +114,21 @@ export type DraftIssue = Readonly<{
 }>;
 
 export type DecodeResult =
-  | Readonly<{ ok: true; variant: VariantDefinition; source: "envelope" | "legacy-variant" }>
+  | Readonly<{ ok: true; variant: VariantDefinition; source: "envelope" | "legacy-variant"; savedAt: string | null }>
   | Readonly<{ ok: false; code: DraftErrorCode; message: string; issues: readonly DraftIssue[] }>;
 
+export type ExportResult =
+  | Readonly<{ ok: true; fileName: string; text: string }>
+  | Readonly<{ ok: false; code: "VARIANT_INVALID"; message: string; issues: readonly DraftIssue[] }>;
+
+/** Parse + draftIssues gate; on success returns an independent canonical copy and its compact text. */
+export function checkDraft(input: unknown):
+  | Readonly<{ ok: true; variant: VariantDefinition; text: string }>
+  | Readonly<{ ok: false; issues: readonly DraftIssue[] }>;
 export function decodeEnvelope(raw: unknown): DecodeResult;
 export function parseImportText(text: string, byteSize: number): DecodeResult;
-export function exportDraft(variant: VariantDefinition): Readonly<{ fileName: string; text: string }>;
+export function exportDraft(variant: VariantDefinition): ExportResult; // refuses drafts with blocking issues
+export function exportFileName(variant: Pick<VariantDefinition, "id" | "name">): string;
 
 // storage.ts
 export interface DraftStorage {
@@ -131,18 +140,20 @@ export function browserDraftStorage(): DraftStorage | null; // null on the serve
 export function createMemoryDraftStorage(options?: {
   quotaBytes?: number;
   unavailable?: boolean;
-}): DraftStorage; // realistic adapter for tests
+  initial?: Readonly<Record<string, string>>;
+}): DraftStorage; // realistic adapter for tests; throws QuotaExceededError / SecurityError DOMExceptions
 
 // repository.ts
 export type LoadResult =
   | Readonly<{ status: "empty" }>
-  | Readonly<{ status: "restored"; variant: VariantDefinition; savedAt: string }>
+  | Readonly<{ status: "unavailable"; code: "STORAGE_UNAVAILABLE"; message: string }>
+  | Readonly<{ status: "restored"; variant: VariantDefinition; savedAt: string | null }>
   | Readonly<{ status: "failed"; code: DraftErrorCode; message: string; issues: readonly DraftIssue[]; raw: string }>;
 
 export type SaveResult =
   | Readonly<{ status: "saved"; savedAt: string }>
   | Readonly<{ status: "unchanged" }>
-  | Readonly<{ status: "failed"; code: DraftErrorCode; message: string }>;
+  | Readonly<{ status: "failed"; code: DraftErrorCode; message: string; issues: readonly DraftIssue[] }>;
 
 export type ClearResult =
   | Readonly<{ ok: true }>
@@ -164,10 +175,19 @@ export function createDraftRepository(
 
 Repository guarantees:
 
-- Saves run one at a time in call order, so an earlier save can never finish
-  after, and overwrite, a newer one.
-- A save whose canonical variant text matches the last written or baseline text
-  returns `unchanged` without writing.
+- Browser storage is synchronous, so each operation completes in call order
+  before its promise is returned. An earlier save can never finish after, and
+  overwrite, a newer one, and a lifecycle flush writes before the page is hidden.
+  A future asynchronous adapter must preserve the same ordering.
+- `save` applies the same gate as playtest handoff (`checkDraft`). A draft with
+  blocking issues returns `failed` with code `VARIANT_INVALID` and its issues,
+  and the last valid stored copy is kept.
+- A save whose canonical variant text matches the last written, restored, or
+  baseline text returns `unchanged` without writing.
+- `load` accepts only an envelope. A bare variant in storage is reported as
+  `ENVELOPE_MALFORMED`; bare variants are accepted only through import.
+- Blocked storage on load returns `unavailable` rather than `failed`: there is no
+  stored value to diagnose, and the editor opens First Flight with autosave off.
 - A failed load returns the raw stored text (at most `MAX_IMPORT_BYTES`
   characters) for diagnosis. The repository does not overwrite that value until
   the user edits, imports, or confirms a reset.
@@ -208,6 +228,7 @@ Repository guarantees:
 | Recovery result | Behavior |
 | --- | --- |
 | `empty` | Load an independent copy of First Flight and mark it as the baseline. Nothing is written until the first edit. |
+| `unavailable` | Load First Flight and show that autosave is off, with guidance to export. |
 | `restored` | Start the editor from the restored draft and announce when it was saved. |
 | `failed` | Load First Flight and show a focused alert with the code, a "Download stored data" button, "Reset saved draft", and a pointer to import. |
 
