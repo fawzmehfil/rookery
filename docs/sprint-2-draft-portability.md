@@ -194,6 +194,86 @@ Repository guarantees:
 - Storage exceptions are mapped to the codes below and never escape as
   implementation errors.
 
+### Hook, controls, and editor integration
+
+```ts
+// use-draft-persistence.ts (client only)
+export const AUTOSAVE_DELAY_MS = 600;
+
+export type SaveStatus =
+  | Readonly<{ kind: "idle"; lastSavedAt: string | null }>
+  | Readonly<{ kind: "pending" }>
+  | Readonly<{ kind: "saved"; savedAt: string }>
+  | Readonly<{ kind: "invalid"; count: number; lastSavedAt: string | null }>
+  | Readonly<{ kind: "error"; code: DraftErrorCode; message: string }>;
+
+export type RecoveryNotice =
+  | Readonly<{ kind: "failed"; code: DraftErrorCode; message: string; issues: readonly DraftIssue[]; raw: string }>
+  | Readonly<{ kind: "unavailable"; message: string }>;
+
+export function useDraftPersistence(repository?: DraftRepository):
+  | Readonly<{ phase: "restoring" }>
+  | Readonly<{
+      phase: "ready";
+      editorDraft: VariantDefinition; // what the editor mounts from
+      editorKey: number;              // changes on reset, remounting all editor-local state
+      editorMessage: string | undefined;
+      status: SaveStatus;
+      notice: RecoveryNotice | null;
+      onDraftChange(draft: VariantDefinition): void; // schedules the debounced save
+      handoff(): VariantDefinition;   // flushes, then keeps the latest draft for the next mount
+      returnToEditor(): void;
+      reset(): Promise<void>;         // clears storage, loads a fresh First Flight baseline
+    }>;
+```
+
+- Without an injected repository, the hook creates one over
+  `browserDraftStorage()` inside an effect, so nothing touches browser storage
+  during server rendering.
+- `phase: "restoring"` is returned until `load` settles. The workshop renders
+  only a "Restoring your draft…" status in that phase, which is identical on the
+  server and the first client render.
+- The editor's initial `onDraftChange` call on mount is recognised by identity
+  and ignored, so restoring or resetting never schedules a write by itself.
+
+| `SaveStatus` | Text shown in "Your draft" |
+| --- | --- |
+| `idle` | "Autosave is on. Valid changes save in this browser." (or the last saved time) |
+| `pending` | "Saving…" |
+| `saved` | "Saved in this browser at HH:MM." |
+| `invalid` | "Not saved: resolve N issues. Last valid draft kept (HH:MM)." |
+| `error` | "Couldn't save: " followed by the error code's guidance |
+
+```ts
+// draft-controls.tsx
+export function DraftControls(props: {
+  status: SaveStatus;
+  notice: RecoveryNotice | null;
+  onReset: () => Promise<void>;
+}): JSX.Element;
+```
+
+`DraftControls` renders the "Your draft" region: a polite `role="status"` save
+line, a **Reset draft** button confirmed through the shared `ConfirmChange`
+dialog, a focused `role="alert"` recovery panel (with **Download stored data**
+and **Reset saved draft**) for a failed load, and an "Autosave is off" notice
+when storage is unavailable. It holds no draft state of its own.
+
+Integration points (all additive and optional, so editor-only usage and tests
+are unchanged):
+
+| Component | Prop | Purpose |
+| --- | --- | --- |
+| `VariantEditor` | `onDraftChange?(variant)` | Called from an effect with every committed draft, including the initial one. |
+| `VariantEditor` | `initialMessage?` | Replaces the default status message on mount, e.g. after restore or reset. |
+| `VariantEditor` | `draftControls?: ReactNode` | Slot rendered below the introduction; the workshop passes `DraftControls`. |
+| `VariantWorkshop` | `repository?: DraftRepository` | Replaces browser storage, e.g. with an in-memory repository in tests. |
+
+`VariantWorkshop` mounts the editor with `key={editorKey}` and
+`initialVariant={editorDraft}`. It calls `handoff()` before starting a playtest,
+so a pending save is written and only the variant is persisted, and it clears
+session-only piece tokens after `reset()`.
+
 ## Error codes
 
 | Code | Raised by | Recovery guidance |
