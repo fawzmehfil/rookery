@@ -58,7 +58,7 @@ describe("capture-the-royal", () => {
   });
 });
 
-it("does not evaluate current objectives before their engine implementation", () => {
+it("does not infer action-attributed objectives from a position alone", () => {
   const variant = {
     ...firstFlightVariant,
     schemaVersion: 2,
