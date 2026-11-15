@@ -47,7 +47,7 @@
   font-weight: 650;
 }
 
-.playtest button {
+.header button {
   min-height: 40px;
   padding: 10px 13px;
   border: 1px solid #cbd2c3;
@@ -58,9 +58,10 @@
   cursor: pointer;
 }
 
-.playtest button:hover:not(:disabled) { background: #eef3e7; }
+.header button:hover:not(:disabled) { background: #eef3e7; }
 .playtest .primary { border-color: #b6d849; background: #d7ff64; color: #263017; }
-.playtest :is(button, a):focus-visible { outline: 3px solid #476f29; outline-offset: 3px; }
+.playtest a:focus-visible,
+.header button:focus-visible { outline: 3px solid #476f29; outline-offset: 3px; }
 
 .intro {
   display: flex;

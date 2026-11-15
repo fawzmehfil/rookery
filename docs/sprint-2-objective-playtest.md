@@ -113,12 +113,6 @@ Test-only data lives in `src/features/local-playtest/objective-test-fixtures.ts`
 - Marker shape is chosen by player order (first player brackets, second player
   ring), matching the board adapter's white/black mapping. Only two-player games
   are supported.
-- The playtest's general `.playtest button` style paints every board square
-  white, so the checkered `--board-light`/`--board-dark` colours never show in
-  playtest. This predates S2-06 (see `docs/evidence/playtest-desktop.png`) and
-  is left alone here. The markers were checked visually only on the white
-  playtest squares. The light halo meant for darker boards, such as the
-  `/dev/board-surface` preview, has not been checked visually.
 - No capture or victory animation is added; the existing piece glide already
   respects `prefers-reduced-motion`.
 
