@@ -65,11 +65,17 @@ npm test           # run application and rules tests
 npm run build      # create a production build
 npm start          # run the production build
 npm run verify     # run the complete local/CI delivery gate
+npm run test:e2e   # run browser tests against the production build (build first)
 ```
 
 `npm run verify` runs lint, both typechecks, all ordinary tests, the production
 build, production dependency audit, standalone startup/health smoke, and diff
 hygiene. Run it before requesting review.
+
+Browser tests use Playwright. Run `npm run test:e2e:install` once to download
+Chromium and Firefox, then `npm run build` and `npm run test:e2e`. The Sprint 2
+demo steps are in [docs/sprint-2-demo.md](docs/sprint-2-demo.md) and the
+results in [docs/sprint-2-verification.md](docs/sprint-2-verification.md).
 
 ## Run with Docker
 

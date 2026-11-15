@@ -87,3 +87,17 @@ Firefox. The tests start `npm start` on port 3200 (override with `ROOKERY_E2E_PO
 Failures keep a screenshot, trace, and video in `test-results/`; CI uploads
 that folder and `playwright-report/` when the browser job fails. Both folders
 are ignored by Git.
+
+To point the same tests at the hosted preview by hand (never in CI), set
+`ROOKERY_E2E_BASE_URL` to the preview origin before `npm run test:e2e`. No
+local server is started in that case.
+
+Screenshots and the backup recording are optional evidence, separate from the
+release-gate tests:
+
+```bash
+npm run build
+npm run evidence:capture
+```
+
+Files are written to `docs/evidence/sprint-2/` with an `s2-08-` prefix.
