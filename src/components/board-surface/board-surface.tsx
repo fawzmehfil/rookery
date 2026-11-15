@@ -11,7 +11,7 @@ import {
   stepOnScreen,
 } from "./geometry";
 import { PieceArt } from "./piece-art";
-import type { BoardPiece, BoardSquare, BoardSurfaceProps } from "./types";
+import type { BoardPiece, BoardSquare, BoardSurfaceProps, BoardTarget } from "./types";
 import styles from "./board-surface.module.css";
 
 const ARROWS = {
@@ -37,6 +37,7 @@ export function BoardSurface({
   captureDestinations = [],
   lastMove = null,
   checkSquares = [],
+  targets = [],
   disabledSquares = [],
   disabled = false,
   coordinates = true,
@@ -53,6 +54,8 @@ export function BoardSurface({
   const captures = new Set(captureDestinations);
   const checks = new Set(checkSquares);
   const holes = new Set(disabledSquares);
+  const targetsAt = new Map<BoardSquare, BoardTarget[]>();
+  for (const target of targets) targetsAt.set(target.square, [...(targetsAt.get(target.square) ?? []), target]);
 
   // The roving tab stop: the last focused square, else the selection, else the bottom-left corner.
   const fallback = selectedSquare && isOnBoard(selectedSquare, files, ranks) ? selectedSquare : squares[(ranks - 1) * files];
@@ -85,6 +88,7 @@ export function BoardSurface({
       <div ref={gridRef} className={styles.grid} role="group" aria-label={label}>
         {squares.map((square) => {
           const piece = pieceAt.get(square);
+          const squareTargets = targetsAt.get(square) ?? [];
           const { row, column } = screenPosition(square, files, ranks, orientation);
           const state = {
             selected: square === selectedSquare,
@@ -113,13 +117,17 @@ export function BoardSurface({
                 .filter(Boolean)
                 .join(" ")}
               tabIndex={square === tabStop ? 0 : -1}
-              aria-label={describeSquare(square, piece, state)}
+              aria-label={describeSquare(square, piece, squareTargets, state)}
               aria-pressed={state.selected}
               aria-disabled={disabled || state.hole || undefined}
               onClick={() => activate(square, "pointer")}
               onKeyDown={(event) => handleKeyDown(event, square)}
               onFocus={() => setFocused(square)}
             >
+              {/* Between the selection tint (::before) and the move markers (::after), so both stay readable. */}
+              {squareTargets.map((target) => (
+                <span key={target.side} className={styles.target} data-side={target.side} aria-hidden="true" />
+              ))}
               {coordinates && column === 0 && <span className={styles.rankLabel}>{parseSquare(square).rank + 1}</span>}
               {coordinates && row === ranks - 1 && <span className={styles.fileLabel}>{fileLabel(parseSquare(square).file)}</span>}
             </button>
@@ -146,11 +154,17 @@ export function BoardSurface({
 
 type SquareState = Record<"selected" | "legal" | "capture" | "lastMove" | "check" | "hole", boolean>;
 
-/** e.g. "e4, white knight, selected" or "d5, black pawn, capture". */
-function describeSquare(square: BoardSquare, piece: BoardPiece | undefined, state: SquareState): string {
+/** e.g. "e4, white knight, selected" or "a3, White target, legal move". */
+function describeSquare(
+  square: BoardSquare,
+  piece: BoardPiece | undefined,
+  targets: readonly BoardTarget[],
+  state: SquareState,
+): string {
   const parts = [square];
   if (state.hole) parts.push("not part of the board");
   if (piece) parts.push(piece.label ?? `${piece.side} ${piece.kind}`);
+  for (const target of targets) parts.push(target.label);
   if (state.selected) parts.push("selected");
   if (state.capture) parts.push("capture");
   else if (state.legal) parts.push("legal move");

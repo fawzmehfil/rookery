@@ -63,10 +63,15 @@ export function BoardSurfacePreview() {
           label="Small board example"
           orientation="black"
           checkSquares={["c1"]}
+          targets={[
+            { square: "a1", side: "white", label: "White target" },
+            { square: "f6", side: "white", label: "White target" },
+            { square: "b2", side: "black", label: "Black target" },
+          ]}
           disabledSquares={["c3", "d3", "c4", "d4"]}
           onSquareActivate={record}
         />
-        <figcaption>6 × 6 from black&apos;s side · check, removed cells and a custom piece</figcaption>
+        <figcaption>6 × 6 from black&apos;s side · check, removed cells, targets and a custom piece</figcaption>
       </figure>
 
       <section aria-live="polite">

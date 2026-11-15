@@ -39,6 +39,7 @@ A live example of every state is at `/dev/board-surface` while running `npm run 
 | `captureDestinations` | `readonly BoardSquare[]` | Drawn as corner wedges. |
 | `lastMove` | `{ from, to } \| null` | Tinted with a dashed inset. |
 | `checkSquares` | `readonly BoardSquare[]` | Radial warning burst. |
+| `targets` | `readonly BoardTarget[]` | `{ square, side, label }`. Goal cells such as reach-target cells. White draws corner brackets, black a dashed ring, both with a small flag, layered under the move markers. `label` is added to the square's accessible name after the occupant. A square may hold one target per side. |
 | `disabledSquares` | `readonly BoardSquare[]` | Cells that aren't part of the board. Hatched and never activated. |
 | `disabled` | `boolean` | Blocks all activation (e.g. game over). Squares stay focusable so the position can still be read. |
 | `coordinates` | `boolean` | Edge labels. Default `true`. |
@@ -53,7 +54,7 @@ The board is a single tab stop. Arrow keys move around the board following the s
 
 ## Theming
 
-Colours are custom properties on the board's root (`--board-light`, `--board-dark`, `--board-move`, `--board-check`, …). Override them from a parent class to re-theme it.
+Colours are custom properties on the board's root (`--board-light`, `--board-dark`, `--board-move`, `--board-check`, `--board-target-white`, `--board-target-black`, …). Override them from a parent class to re-theme it.
 
 ## Open questions for the editor
 
