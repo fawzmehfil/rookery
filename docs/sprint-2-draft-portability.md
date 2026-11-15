@@ -549,5 +549,3 @@ JSON, and Reset draft, and the editor message "Restored your draft saved at
 
 - [Desktop, 1440 × 1000 at 2×, full page](evidence/sprint-2/autosave-recovery-portability-desktop.png)
 - [Narrow, 390 × 844 at 2×, full page](evidence/sprint-2/autosave-recovery-portability-narrow.png). "Your draft" stacks into one column and its buttons wrap without horizontal overflow.
-
-
