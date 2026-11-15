@@ -43,9 +43,11 @@ preview, and dev preview are unchanged. The editor board does not pass targets
 yet. Its square names stay `"d2"` and similar, which S2-08's Playwright tests
 match exactly.
 
-- **Shape, not just colour.** The first player's targets use cream corner
-  brackets; the second player's use a dark dashed ring. Both carry a small flag
-  glyph in opposite corners, away from the rank and file labels.
+- **Shape, not just colour.** The first player's targets use blue (`#416e8f`)
+  corner brackets; the second player's use a brown (`#9b6127`) dashed ring. These
+  match the per-player colours in the objective editor's target panels. Both
+  carry a small flag glyph in opposite corners, away from the rank and file
+  labels, and a light halo keeps them readable on dark squares.
 - **Layering.** The marker is a child element between the square's `::before`
   (last move, selected, check) and `::after` (legal dot, capture wedges), and
   below the piece layer. Selection, legal and capture markers, focus rings, and
@@ -111,6 +113,12 @@ Test-only data lives in `src/features/local-playtest/objective-test-fixtures.ts`
 - Marker shape is chosen by player order (first player brackets, second player
   ring), matching the board adapter's white/black mapping. Only two-player games
   are supported.
+- The playtest's general `.playtest button` style paints every board square
+  white, so the checkered `--board-light`/`--board-dark` colours never show in
+  playtest. This predates S2-06 (see `docs/evidence/playtest-desktop.png`) and
+  is left alone here. The markers were checked visually only on the white
+  playtest squares. The light halo meant for darker boards, such as the
+  `/dev/board-surface` preview, has not been checked visually.
 - No capture or victory animation is added; the existing piece glide already
   respects `prefers-reduced-motion`.
 
@@ -124,3 +132,24 @@ Recorded on macOS, from branch `ibrahim/objective-playtest-ui`:
   health/home/editor smoke test, and `git diff --check`.
 - Baseline on `main` before changes: 189 app tests and 135 rules tests, all passing.
 - Local Node was 23.7.0; CI runs the `.nvmrc` version (22).
+
+Browser checks, in Chrome against `next dev`, with a cleared draft:
+
+- Desktop 1440 px and narrow 390 px. The narrow layout was measured in a 390 px
+  same-origin frame, because the Chrome window cannot be made that narrow.
+  Document scroll width equalled the viewport at both sizes.
+- Played all three showcases to their conclusions. Checked the status card, the
+  live-region sentence, remaining counts, event history, locked board, and reset.
+- Ran a Long Walk move with real key presses (Enter, ArrowUp, Enter). Focus
+  stayed on the destination square with a visible ring, and the move was
+  announced.
+- Saw a target cell with selection and a legal-move dot drawn together.
+- No console errors through a full Last Flock Standing game and reset.
+
+Evidence in `docs/evidence/sprint-2/`:
+
+| Showcase | Desktop | Narrow |
+| --- | --- | --- |
+| First Flight (capture the royal) | `playtest-first-flight-desktop.png` | `playtest-first-flight-narrow.png` |
+| The Long Walk (reach a target) | `playtest-long-walk-desktop.png` | `playtest-long-walk-narrow.png` |
+| Last Flock Standing (eliminate all) | `playtest-last-flock-desktop.png` | `playtest-last-flock-narrow.png` |
