@@ -1,33 +1,17 @@
+import { evaluateObjectiveOutcome } from "./internal/objective-outcome";
 import type { GameOutcome, GameState, VariantDefinition } from "./types";
 
+/**
+ * Returns the recorded outcome, or the outcome derivable from the position alone.
+ *
+ * Capture-royal is fully positional. Reach-target and eliminate-all are decided
+ * by `applyAction` from the accepted action, so for them this returns the outcome
+ * stored on the state, or `null`; a position alone never infers their win.
+ */
 export function evaluateOutcome(variant: VariantDefinition, state: GameState): GameOutcome | null {
   if (state.outcome) return state.outcome;
-  if (variant.objectives[0]?.type !== "capture-royal") return null;
 
-  const royalTypeIds = new Set(variant.pieceTypes.filter(({ royal }) => royal).map(({ id }) => id));
-  const missingRoyals = variant.players.flatMap(({ id: playerId }) => {
-    const royalPlacement = variant.setup.find(
-      ({ ownerId, typeId }) => ownerId === playerId && royalTypeIds.has(typeId),
-    );
+  const result = evaluateObjectiveOutcome(variant, state, null);
 
-    if (!royalPlacement) return [];
-
-    const royalIsPresent = state.pieces.some(({ id }) => id === royalPlacement.id);
-    return royalIsPresent ? [] : [{ playerId, pieceId: royalPlacement.id }];
-  });
-
-  if (missingRoyals.length !== 1) return null;
-
-  const capturedRoyal = missingRoyals[0];
-  const winner = variant.players.find(({ id }) => id !== capturedRoyal?.playerId);
-
-  if (!capturedRoyal || !winner) return null;
-
-  return Object.freeze({
-    type: "win",
-    reason: "capture-royal",
-    winnerPlayerId: winner.id,
-    loserPlayerId: capturedRoyal.playerId,
-    capturedPieceId: capturedRoyal.pieceId,
-  });
+  return result.ok ? result.value : null;
 }

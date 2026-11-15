@@ -120,6 +120,14 @@ export function createInitialState(variant: VariantDefinition): EngineResult<Gam
     }
   }
 
+  if (objective?.type === "eliminate-all") {
+    for (const playerId of playerIds) {
+      if (!definition.setup.some(({ ownerId }) => ownerId === playerId)) {
+        return invalidVariant("Eliminate-all requires at least one starting piece per player.", { playerId });
+      }
+    }
+  }
+
   const pieces = Object.freeze(
     definition.setup.map<GamePiece>((placement) =>
       Object.freeze({
