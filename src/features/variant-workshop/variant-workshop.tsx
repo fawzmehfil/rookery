@@ -70,7 +70,7 @@ function WorkshopSession({ repository }: VariantWorkshopProps) {
       initialMessage={persistence.editorMessage}
       onDraftChange={persistence.onDraftChange}
       onPlaytest={startPlaytest}
-      draftControls={<DraftControls status={persistence.status} notice={persistence.notice} onReset={reset} />}
+      draftControls={(draft) => <DraftControls draft={draft} status={persistence.status} notice={persistence.notice} onReset={reset} />}
     />
   );
 }

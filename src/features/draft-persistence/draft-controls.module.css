@@ -4,6 +4,8 @@
 .statusText, .attention { margin: 0; font-size: 12px; line-height: 1.6; color: #5b6654; overflow-wrap: anywhere; }
 .attention { color: #8a4a12; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.feedback { grid-column: 1 / -1; margin: 0; font-size: 12px; line-height: 1.6; color: #5b6654; overflow-wrap: anywhere; }
+.feedback:empty { display: none; }
 .alert { grid-column: 1 / -1; margin: 0; padding: 14px; border: 1px solid #d1aa49; border-radius: 7px; background: #fff5d8; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .alert h3 { margin: 0 0 6px; font-size: 13px; }
 .alert ul { margin: 6px 0; padding-left: 18px; }

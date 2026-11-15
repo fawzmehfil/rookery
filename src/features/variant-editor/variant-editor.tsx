@@ -26,8 +26,8 @@ export type VariantEditorProps = {
   onDraftChange?: (variant: VariantDefinition) => void;
   /** Replaces the default status message on mount, e.g. after recovery or reset. */
   initialMessage?: string;
-  /** Container-owned controls rendered below the introduction, such as save status. */
-  draftControls?: ReactNode;
+  /** Container-owned controls rendered below the introduction with the current draft, such as save status and export. */
+  draftControls?: (draft: VariantDefinition) => ReactNode;
 };
 
 export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest, onDraftChange, initialMessage, draftControls }: VariantEditorProps) {
@@ -111,7 +111,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest,
       <button className={styles.primary} disabled={blocking.length > 0} onClick={handoff}>{onPlaytest ? "Open playtest" : "Download valid draft"} <span aria-hidden="true">↗</span></button>
     </header>
     <div className={styles.intro}><div><p className={styles.eyebrow}>Variant workshop · 01</p><h1>Make your next move.</h1><p>Shape the board. Give your pieces a new way to play.</p></div><div className={styles.draftName}><strong>{draft.name}</strong><span>{objectiveChoices.find(o=>o.type===draft.objectives[0]?.type)?.name} · {draft.players.length} players</span></div></div>
-    {draftControls}
+    {draftControls?.(draft)}
     <ShowcasePicker draft={draft} onLoad={next=>{setDraft(next);setSelected(null);setTargetPlayer(null);setTool("select");setOwner(next.players[0]?.id??"");setPaletteType(next.pieceTypes[0]?.id??"");setTypeId(next.pieceTypes[0]?.id??"");setEditorRevision(revision=>revision+1);setLibraryOpen(false);setRemovingType(null);Object.keys(tokens).forEach(id=>setToken(id,""));setFiles(String(next.board.files));setRanks(String(next.board.ranks));setPendingResize(null);setCell("a1");setMessage(`${next.name} loaded. Customize its board, pieces and objective.`);}} />
     <div className={styles.workspace}>
       <section className={styles.panel} aria-labelledby="setup-heading">

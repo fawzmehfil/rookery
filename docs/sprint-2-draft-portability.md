@@ -247,6 +247,7 @@ export function useDraftPersistence(repository?: DraftRepository):
 ```ts
 // draft-controls.tsx
 export function DraftControls(props: {
+  draft: VariantDefinition; // the editor's current draft, used for export
   status: SaveStatus;
   notice: RecoveryNotice | null;
   onReset: () => Promise<void>;
@@ -254,10 +255,18 @@ export function DraftControls(props: {
 ```
 
 `DraftControls` renders the "Your draft" region: a polite `role="status"` save
-line, a **Reset draft** button confirmed through the shared `ConfirmChange`
+line, an **Export JSON** button, a **Reset draft** button confirmed through the shared `ConfirmChange`
 dialog, a focused `role="alert"` recovery panel (with **Download stored data**
 and **Reset saved draft**) for a failed load, and an "Autosave is off" notice
 when storage is unavailable. It holds no draft state of its own.
+
+**Export JSON** runs `exportDraft` only when clicked and downloads
+`<slug>.rookery.json` as `application/json` through `downloadText` in
+`download.ts`, the same helper used by "Download stored data". A draft with
+blocking issues produces no file; a polite message says how many issues to
+resolve, because export uses the same gate as playtest. The button stays
+enabled and focusable so that explanation is always reachable. Exporting never
+reads or writes browser storage.
 
 Integration points (all additive and optional, so editor-only usage and tests
 are unchanged):
@@ -266,7 +275,7 @@ are unchanged):
 | --- | --- | --- |
 | `VariantEditor` | `onDraftChange?(variant)` | Called from an effect with every committed draft, including the initial one. |
 | `VariantEditor` | `initialMessage?` | Replaces the default status message on mount, e.g. after restore or reset. |
-| `VariantEditor` | `draftControls?: ReactNode` | Slot rendered below the introduction; the workshop passes `DraftControls`. |
+| `VariantEditor` | `draftControls?: (draft) => ReactNode` | Render slot below the introduction, called with the current draft; the workshop renders `DraftControls`. |
 | `VariantWorkshop` | `repository?: DraftRepository` | Replaces browser storage, e.g. with an in-memory repository in tests. |
 
 `VariantWorkshop` mounts the editor with `key={editorKey}` and

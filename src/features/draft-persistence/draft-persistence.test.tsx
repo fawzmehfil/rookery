@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { VariantDefinition } from "@rookery/rules";
 import { longWalkVariant } from "@rookery/rules/fixtures";
 import { VariantWorkshop } from "@/features/variant-workshop/variant-workshop";
-import { DRAFT_STORAGE_KEY } from "./envelope";
+import { DRAFT_STORAGE_KEY, exportDraft } from "./envelope";
 import { createDraftRepository, type DraftRepository, type LoadResult } from "./repository";
 import { createMemoryDraftStorage, type DraftStorage } from "./storage";
 import { AUTOSAVE_DELAY_MS } from "./use-draft-persistence";
@@ -11,7 +11,37 @@ import { AUTOSAVE_DELAY_MS } from "./use-draft-persistence";
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
+
+/** jsdom has no object URLs; capture each downloaded Blob and file name instead of navigating. */
+function captureDownloads() {
+  const files: { name: string; blob: Blob }[] = [];
+  let pending: Blob | null = null;
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: vi.fn((blob: Blob) => {
+      pending = blob;
+      return "blob:rookery-test";
+    }),
+  });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+    if (pending) files.push({ name: this.download, blob: pending });
+    pending = null;
+  });
+  return files;
+}
+
+/** jsdom's Blob has no text(); FileReader is available. */
+function readBlob(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(blob);
+  });
+}
 
 const clock = () => new Date("2026-11-14T17:04:00.000Z");
 
@@ -246,4 +276,39 @@ it("reports a full storage quota and keeps the in-memory draft", async () => {
 
   expect(squareCount()).toBe(30);
   expect(saveStatus()).toContain("Couldn't save: Browser storage is full.");
+});
+
+it("exports the current draft as the deterministic envelope without touching storage", async () => {
+  const files = captureDownloads();
+  const { storage, write } = await openWorkshop();
+  resizeFiles(6);
+  await advance(AUTOSAVE_DELAY_MS);
+
+  const exportButton = screen.getByRole("button", { name: "Export JSON" });
+  fireEvent.click(exportButton);
+  fireEvent.click(exportButton);
+  vi.useRealTimers();
+
+  const expected = exportDraft(storedVariant(storage)!);
+  if (!expected.ok) throw new Error("Expected the edited draft to export");
+  expect(files.map(({ name }) => name)).toEqual(["first-flight.rookery.json", "first-flight.rookery.json"]);
+  expect(files.every(({ blob }) => blob.type === "application/json")).toBe(true);
+  const [first, second] = await Promise.all(files.map(({ blob }) => readBlob(blob)));
+  expect(first).toBe(expected.text);
+  expect(second).toBe(first);
+  expect((JSON.parse(first!) as { variant: VariantDefinition }).variant.board.files).toBe(6);
+  expect(screen.getByText("Exported first-flight.rookery.json.")).toBeTruthy();
+  expect(write).toHaveBeenCalledTimes(1);
+});
+
+it("refuses to export a draft with blocking issues and explains why", async () => {
+  const files = captureDownloads();
+  await openWorkshop();
+  removeWhiteRoyal();
+
+  fireEvent.click(screen.getByRole("button", { name: "Export JSON" }));
+
+  expect(files).toHaveLength(0);
+  expect(URL.createObjectURL).not.toHaveBeenCalled();
+  expect(screen.getByText(/^Resolve \d+ issues? before exporting\. Export uses the same checks as playtest\.$/)).toBeTruthy();
 });

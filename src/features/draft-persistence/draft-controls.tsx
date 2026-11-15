@@ -1,19 +1,37 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { VariantDefinition } from "@rookery/rules";
 import { ConfirmChange } from "@/features/objective-editor/confirmation";
+import { downloadText } from "./download";
+import { exportDraft } from "./envelope";
 import { formatTime, type RecoveryNotice, type SaveStatus } from "./use-draft-persistence";
 import styles from "./draft-controls.module.css";
 
 export type DraftControlsProps = {
+  /** The editor's current draft, used for export. */
+  draft: VariantDefinition;
   status: SaveStatus;
   notice: RecoveryNotice | null;
   onReset: () => Promise<void>;
 };
 
-/** Save status, reset, and recovery guidance for the local draft. */
-export function DraftControls({ status, notice, onReset }: DraftControlsProps) {
+/** Save status, export, reset, and recovery guidance for the local draft. */
+export function DraftControls({ draft, status, notice, onReset }: DraftControlsProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [feedback, setFeedback] = useState("");
+
+  function exportJson() {
+    // Validation runs only on request; an invalid draft never produces a file.
+    const result = exportDraft(draft);
+    if (!result.ok) {
+      const count = result.issues.length;
+      setFeedback(`Resolve ${count} issue${count === 1 ? "" : "s"} before exporting. Export uses the same checks as playtest.`);
+      return;
+    }
+    downloadText(result.fileName, result.text, "application/json");
+    setFeedback(`Exported ${result.fileName}.`);
+  }
 
   return (
     <section className={styles.controls} aria-labelledby="draft-heading">
@@ -24,8 +42,10 @@ export function DraftControls({ status, notice, onReset }: DraftControlsProps) {
         </p>
       </div>
       <div className={styles.actions}>
+        <button type="button" onClick={exportJson}>Export JSON</button>
         <button type="button" onClick={() => setConfirmingReset(true)}>Reset draft</button>
       </div>
+      <p className={styles.feedback} aria-live="polite">{feedback}</p>
       {notice?.kind === "failed" && <RecoveryAlert notice={notice} onReset={() => setConfirmingReset(true)} />}
       {notice?.kind === "unavailable" && (
         <p className={styles.alert} role="alert">Autosave is off: {notice.message}</p>
@@ -53,12 +73,7 @@ function RecoveryAlert({ notice, onReset }: { notice: Extract<RecoveryNotice, { 
   }, []);
 
   function downloadRaw() {
-    const url = URL.createObjectURL(new Blob([notice.raw], { type: "text/plain" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "rookery-unrecoverable-draft.txt";
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadText("rookery-unrecoverable-draft.txt", notice.raw, "text/plain");
   }
 
   return (
