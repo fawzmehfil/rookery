@@ -18,6 +18,7 @@
     "test": "vitest run && npm run test --workspace @rookery/rules",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium firefox",
+    "evidence:capture": "node scripts/capture-evidence.mjs",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "audit:production": "npm audit --omit=dev",
     "verify:repository": "node scripts/verify-repository.mjs",
