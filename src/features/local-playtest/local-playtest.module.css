@@ -88,6 +88,14 @@
 
 .intro > div > p:last-child { margin: 0; color: #64705d; font-size: 14px; }
 
+.intro .objective {
+  max-width: 62ch;
+  margin: 0 0 8px;
+  color: #2f3a28;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 .facts {
   display: grid;
   grid-template-columns: repeat(4, minmax(78px, 1fr));
@@ -161,6 +169,57 @@
 .sectionHeading { font-size: 14px !important; }
 .empty { margin: 0; color: #69715f; }
 .compactList { display: grid; gap: 5px; margin: 0; padding-left: 18px; font-size: 12px; }
+
+.targetList { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.targetList li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; }
+.targetList div { display: grid; gap: 2px; min-width: 0; font-size: 12px; line-height: 1.45; }
+.targetList div span { overflow-wrap: anywhere; }
+.targetList div span:last-child { color: #64705d; }
+
+/* A small copy of each board marker, so the legend works without colour. */
+.targetKey {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: #839570;
+}
+
+.targetKey::before {
+  content: "";
+  position: absolute;
+}
+
+.targetKey[data-side="white"]::before {
+  inset: 4px;
+  background:
+    linear-gradient(#fff6dc, #fff6dc) top left / 7px 2px,
+    linear-gradient(#fff6dc, #fff6dc) top left / 2px 7px,
+    linear-gradient(#fff6dc, #fff6dc) top right / 7px 2px,
+    linear-gradient(#fff6dc, #fff6dc) top right / 2px 7px,
+    linear-gradient(#fff6dc, #fff6dc) bottom left / 7px 2px,
+    linear-gradient(#fff6dc, #fff6dc) bottom left / 2px 7px,
+    linear-gradient(#fff6dc, #fff6dc) bottom right / 7px 2px,
+    linear-gradient(#fff6dc, #fff6dc) bottom right / 2px 7px;
+  background-repeat: no-repeat;
+}
+
+.targetKey[data-side="black"]::before {
+  inset: 5px;
+  border: 2px dashed #2b1d3f;
+  border-radius: 50%;
+}
+
+.remaining {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.remaining div { padding: 10px 12px; border: 1px solid #dce0d5; border-radius: 7px; }
+.remaining dt { color: #69715f; font-size: 11px; }
+.remaining dd { margin: 3px 0 0; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .eventLog {
   display: grid;

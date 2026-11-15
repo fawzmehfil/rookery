@@ -8,7 +8,6 @@ import {
   getLegalActions,
   squareToCoordinate,
   type EngineError,
-  type EngineEvent,
   type MoveAction,
 } from "@rookery/rules";
 import { BoardSurface, type BoardMove, type SquareActivation } from "@/components/board-surface";
@@ -20,6 +19,15 @@ import {
   submitLocalAction,
   type LocalSession,
 } from "./local-session";
+import {
+  announceAcceptedAction,
+  boardTargets,
+  describeEvent,
+  describeOutcome,
+  objectiveSummary,
+  playerTargets,
+  remainingPieces,
+} from "./objective-presentation";
 import styles from "./local-playtest.module.css";
 
 export type LocalPlaytestProps = {
@@ -49,7 +57,9 @@ export function LocalPlaytest({ initialSession, onReturnToEditor }: LocalPlaytes
   }
 
   const activePlayer = variant.players.find(({ id }) => id === state.activePlayerId);
-  const winner = variant.players.find(({ id }) => id === state.outcome?.winnerPlayerId);
+  const objective = objectiveSummary(variant);
+  const targets = playerTargets(variant);
+  const outcome = state.outcome ? describeOutcome(state.outcome, variant) : null;
   const turn = Math.floor(state.ply / variant.turnOrder.length) + 1;
   const captured = variant.setup.filter(
     ({ id }) => !state.pieces.some((piece) => piece.id === id),
@@ -68,11 +78,7 @@ export function LocalPlaytest({ initialSession, onReturnToEditor }: LocalPlaytes
     setSession(result.value);
     setSelectedPieceId(null);
     setError(null);
-    setMessage(
-      result.value.state.outcome
-        ? "The royal capture ended the game."
-        : "Move accepted. Select a piece for the next player.",
-    );
+    setMessage(announceAcceptedAction(result.value.history.at(-1)?.events ?? [], variant));
   }
 
   function activate({ square, piece }: SquareActivation) {
@@ -142,6 +148,11 @@ export function LocalPlaytest({ initialSession, onReturnToEditor }: LocalPlaytes
         <div>
           <p className={styles.eyebrow}>Validated engine session</p>
           <h1 id="playtest-title">{variant.name}</h1>
+          {objective && (
+            <p className={styles.objective}>
+              <strong>{objective.title}.</strong> {objective.instructions}
+            </p>
+          )}
           <p>Every highlight and move comes from the shared rules engine.</p>
         </div>
         <dl className={styles.facts}>
@@ -169,6 +180,7 @@ export function LocalPlaytest({ initialSession, onReturnToEditor }: LocalPlaytes
               legalDestinations={legalDestinations}
               captureDestinations={captureDestinations}
               lastMove={lastMove}
+              targets={boardTargets(variant, selectedPiece)}
               disabledSquares={variant.board.disabledCells.map(coordinateToSquare)}
               disabled={Boolean(state.outcome)}
               onSquareActivate={activate}
@@ -181,19 +193,49 @@ export function LocalPlaytest({ initialSession, onReturnToEditor }: LocalPlaytes
         </section>
 
         <aside className={styles.panel} aria-label="Playtest details">
-          <section className={styles.gameStatus} data-finished={Boolean(state.outcome) || undefined}>
-            <p className={styles.eyebrow}>Current status</p>
-            <h2>
-              {state.outcome
-                ? `${winner?.name ?? state.outcome.winnerPlayerId} wins`
-                : `${activePlayer?.name ?? "Unknown player"} to move`}
-            </h2>
+          <section className={styles.gameStatus} data-finished={Boolean(outcome) || undefined}>
+            <p className={styles.eyebrow}>{outcome ? "Game over" : "Current status"}</p>
+            <h2>{outcome ? outcome.headline : `${activePlayer?.name ?? "Unknown player"} to move`}</h2>
             <p>
-              {state.outcome
-                ? "Victory by capturing the opposing royal. Board input is now locked."
-                : `${selectedActions.length} legal target${selectedActions.length === 1 ? "" : "s"}${selectedPiece ? " for the selected piece" : " available after selecting a piece"}.`}
+              {outcome
+                ? `${outcome.detail} Board input is now locked; reset to play again.`
+                : `${selectedActions.length} legal move${selectedActions.length === 1 ? "" : "s"}${selectedPiece ? " for the selected piece" : " available after selecting a piece"}.`}
             </p>
           </section>
+
+          {objective?.type === "reach-target" && (
+            <section aria-labelledby="targets-heading">
+              <h2 id="targets-heading" className={styles.sectionHeading}>Targets</h2>
+              <ul className={styles.targetList}>
+                {targets.map((target) => (
+                  <li key={target.playerId}>
+                    <span className={styles.targetKey} data-side={target.side} aria-hidden="true" />
+                    <div>
+                      <strong>{target.playerName}</strong>
+                      <span>{target.squares.join(", ")}</span>
+                      <span>
+                        {target.side === "white" ? "Corner brackets" : "Dashed ring"} · {target.eligibility === "Any piece" ? "any piece can win" : `eligible: ${target.eligibility}`}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {objective?.type === "eliminate-all" && (
+            <section aria-labelledby="remaining-heading">
+              <h2 id="remaining-heading" className={styles.sectionHeading}>Pieces remaining</h2>
+              <dl className={styles.remaining}>
+                {remainingPieces(variant, state).map((entry) => (
+                  <div key={entry.playerId}>
+                    <dt>{entry.playerName}</dt>
+                    <dd>{entry.count}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
 
           {error && <EngineErrorPanel error={error} />}
 
@@ -243,30 +285,6 @@ function lastBoardMove(session: LocalSession): BoardMove | null {
   const latest = session.history.at(-1)?.events.find(({ type }) => type === "piece-moved");
   if (!latest || latest.type !== "piece-moved") return null;
   return { from: coordinateToSquare(latest.from), to: coordinateToSquare(latest.to) };
-}
-
-function describeEvent(event: EngineEvent, variant: LocalSession["variant"]): string {
-  switch (event.type) {
-    case "piece-moved":
-      return `${pieceName(event.pieceId, variant)} moved ${coordinateToSquare(event.from)} to ${coordinateToSquare(event.to)}.`;
-    case "piece-captured":
-      return `${pieceName(event.piece.id, variant)} was captured on ${coordinateToSquare(event.at)}.`;
-    case "turn-changed":
-      return `Turn changed to ${playerName(event.toPlayerId, variant)}.`;
-    case "game-ended":
-      return `${playerName(event.outcome.winnerPlayerId, variant)} won by capturing the royal.`;
-  }
-}
-
-function pieceName(pieceId: string, variant: LocalSession["variant"]): string {
-  const piece = variant.setup.find(({ id }) => id === pieceId);
-  const owner = variant.players.find(({ id }) => id === piece?.ownerId);
-  const type = variant.pieceTypes.find(({ id }) => id === piece?.typeId);
-  return `${owner?.name ?? piece?.ownerId ?? "Unknown"} ${type?.name ?? piece?.typeId ?? pieceId}`;
-}
-
-function playerName(playerId: string, variant: LocalSession["variant"]): string {
-  return variant.players.find(({ id }) => id === playerId)?.name ?? playerId;
 }
 
 function readable(value: string): string {
