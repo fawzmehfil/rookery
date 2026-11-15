@@ -1,5 +1,5 @@
 import { coordinateKey, freezeCoordinate, isOnBoard } from "../create-initial-state";
-import { evaluateOutcome } from "../evaluate-outcome";
+import { evaluateObjectiveOutcome } from "./objective-outcome";
 import type {
   ApplyActionResult,
   EngineError,
@@ -71,7 +71,16 @@ export function applyConfirmedAction(
     pieces,
     outcome: null,
   };
-  const outcome = evaluateOutcome(variant, positionAfterMove);
+  const evaluation = evaluateObjectiveOutcome(variant, positionAfterMove, {
+    piece: movingPiece,
+    to,
+    captured: capturedPiece ?? null,
+  });
+
+  // An unsupported objective rejects the whole action: no state, events, or ply change.
+  if (!evaluation.ok) return evaluation;
+
+  const outcome = evaluation.value;
 
   if (outcome) {
     events.push(Object.freeze({ type: "game-ended", ply: nextPly, outcome }));
