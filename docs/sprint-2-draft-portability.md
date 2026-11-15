@@ -392,12 +392,74 @@ The import and recovery UI renders any issue's code, path, and message
 generically, so new S2-03 codes need no UI change. S2-07 tests assert only stable
 Sprint 1 validator codes and this feature's own codes.
 
-## Planned limitations
+## Round-trip example
+
+Exporting The Long Walk produces `the-long-walk.rookery.json`. Importing that
+file returns a variant deeply equal to the original, including its reach-target
+configuration:
+
+```json
+{
+  "format": "rookery.variant-draft",
+  "envelopeVersion": 1,
+  "variantSchemaVersion": 2,
+  "variant": {
+    "schemaVersion": 2,
+    "id": "the-long-walk",
+    "name": "The Long Walk",
+    "board": { "files": 3, "ranks": 3, "disabledCells": [] },
+    "players": [
+      { "id": "white", "name": "White", "forwardRank": 1 },
+      { "id": "black", "name": "Black", "forwardRank": -1 }
+    ],
+    "turnOrder": ["white", "black"],
+    "pieceTypes": [
+      {
+        "id": "runner",
+        "name": "Runner",
+        "royal": false,
+        "movements": [
+          { "kind": "step", "frame": "owner", "mode": "move-or-capture", "offsets": [{ "fileDelta": 0, "rankDelta": 1 }] }
+        ]
+      }
+    ],
+    "setup": [
+      { "id": "white-runner", "typeId": "runner", "ownerId": "white", "at": { "file": 0, "rank": 0 } },
+      { "id": "black-runner", "typeId": "runner", "ownerId": "black", "at": { "file": 2, "rank": 2 } }
+    ],
+    "objectives": [
+      {
+        "type": "reach-target",
+        "requireAction": true,
+        "targets": [
+          { "playerId": "white", "cells": [{ "file": 0, "rank": 2 }], "eligiblePieceTypeIds": ["runner"] },
+          { "playerId": "black", "cells": [{ "file": 2, "rank": 0 }], "eligiblePieceTypeIds": ["runner"] }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The real file uses two-space indentation with one value per line; it is
+condensed here for reading. Field order is exactly as shown. The same round trip
+is tested for First Flight (schema version 1), Last Flock Standing, and a variant
+with disabled cells and Nightrider, Camel, Chancellor, and Pawn template copies.
+
+## Limitations
 
 - Custom piece tokens are session-only, because the shared schema has no token
   field. They are not stored or exported.
 - One draft slot per browser profile. With several tabs open, the last save wins.
 - Saving when the page closes is best-effort and depends on browser lifecycle events.
+- Automated integration tests run in jsdom. The real-browser check is the manual
+  refresh test below; automating browser checks belongs with S2-08's Playwright work.
+- Browser storage is synchronous, so stale-result protection is exercised in
+  tests through a deferred fake repository rather than through `localStorage`.
+- The application test timeout is raised to 15 seconds in `vitest.config.mts`.
+  Full-workflow jsdom tests take about 2 seconds alone but approach the
+  5-second default when every file runs in parallel; 15 seconds matches the
+  budget the Sprint 2 integration test already used.
 
 ## Verification
 
@@ -423,3 +485,69 @@ Environment: Node v22.13.0, npm 11.0.0, Windows 11, Next.js 16.4.3 (Turbopack).
 The full `npm audit` reports eight moderate development-toolchain findings from
 `minimatch` 7.0.0–11.0.0, unchanged from the earlier Sprint 2 baselines. npm's
 forced remediation is a breaking ESLint change, so it is not applied here.
+
+### Final result
+
+Recorded at `73ea0be` with `npm run verify`, in the same environment as the baseline.
+
+| Gate | Baseline | Final |
+| --- | --- | --- |
+| Repository hygiene | 126 tracked files | 140 tracked files |
+| Lint and both typechecks | Pass | Pass |
+| Application tests (jsdom) | 11 files, 95 tests | 14 files, 189 tests passed |
+| Rules tests (Node) | 114 passed, 1 skipped | 114 passed, 1 skipped (unchanged) |
+| Production build | Pass | Pass |
+| `npm audit --omit=dev` | 0 vulnerabilities | 0 vulnerabilities |
+| Production smoke | Passed | Passed: `/api/health`, `/`, `/editor` |
+| `git diff --check` | Pass | Pass |
+
+No dependencies or lockfile entries changed, and no rules-package file changed.
+
+### Automated coverage of the required tests
+
+| Required test | Coverage |
+| --- | --- |
+| Repository with a real-like in-memory adapter | `repository.test.ts` with `createMemoryDraftStorage` |
+| Browser integration | `draft-persistence.test.tsx` renders the real workshop in jsdom; the manual refresh test below covers a real browser |
+| First load, debounce, unchanged suppression, refresh, reset/cancel | `draft-persistence.test.tsx` |
+| Stale async completion | Deferred-repository tests for a late save after a newer edit, a late saved or failed result after reset, and an abandoned StrictMode load. Each was confirmed to fail with its guard removed. |
+| Unavailable storage, quota, malformed, unknown version, structurally and semantically invalid | `repository.test.ts` and `draft-persistence.test.tsx` |
+| Round trips: three showcases, targets, disabled cells, fairy templates | `envelope.test.ts` |
+| Failed import leaves both drafts deeply unchanged | Seven failing files compared against the board markup and the stored string |
+| File-size boundary, wrong root types, hostile keys, long strings, multiple issues | `envelope.test.ts` and `draft-persistence.test.tsx` |
+| Deterministic filename and content; no UI or game-state leakage | `envelope.test.ts` and the export UI test |
+| Keyboard, focus, and announcements | Focus moving to the recovery alert, import failure alert, and import result is tested; controls use native buttons, a labelled file input, and polite live regions |
+
+### Manual refresh test
+
+Run `npm run dev`, open `/editor`, and keep DevTools on Application → Local
+Storage → `http://localhost:3000`.
+
+1. Delete `rookery.editor.draft` and load `/editor`. First Flight (5 × 5) opens,
+   "Your draft" reads "Autosave is on…", and no key is written.
+2. Change Files to 8 and apply. The status shows "Saving…", then "Saved in this
+   browser at HH:MM". The key now holds a version 1 envelope with `"files": 8`.
+3. Refresh the page. The 8 × 5 board returns, the editor message reads "Restored
+   your draft saved at HH:MM", and the status still shows the saved time.
+4. Close the tab and reopen `/editor`. The same draft is restored.
+5. Remove the white Sovereign. The status reads "Not saved: resolve 1 issue.
+   Last valid draft kept (HH:MM)." Refresh: the last valid board returns.
+6. Set the key to `{oops` and refresh. First Flight opens with a focused
+   recovery alert (`ENVELOPE_MALFORMED`), and the key keeps `{oops` until the
+   first edit or a confirmed reset.
+
+Result: **passed**. The restored state after step 3 is shown in both evidence
+screenshots below.
+
+### Evidence
+
+Both screenshots were captured on the development server immediately after a
+refresh. They show the restored First Flight draft (8 × 5, six pieces), "Your
+draft" reading "Saved in this browser at 10:21 PM." with Export JSON, Import
+JSON, and Reset draft, and the editor message "Restored your draft saved at
+10:21 PM."
+
+- [Desktop, 1440 × 1000 at 2×, full page](evidence/sprint-2/autosave-recovery-portability-desktop.png)
+- [Narrow, 390 × 844 at 2×, full page](evidence/sprint-2/autosave-recovery-portability-narrow.png). "Your draft" stacks into one column and its buttons wrap without horizontal overflow.
+
+
