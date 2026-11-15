@@ -82,6 +82,86 @@ describe("controlled highlights", () => {
   });
 });
 
+describe("targets", () => {
+  const targets = [
+    { square: "a3", side: "white", label: "White target" },
+    { square: "h6", side: "white", label: "White target" },
+    { square: "c1", side: "black", label: "Black target" },
+    { square: "d5", side: "black", label: "Black target" },
+  ] as const;
+
+  it("draws one marker per owner, including several targets per side", () => {
+    const { square } = renderBoard({ targets });
+    expect(square("a3").querySelector('[data-side="white"]')).toBeTruthy();
+    expect(square("h6").querySelector('[data-side="white"]')).toBeTruthy();
+    expect(square("c1").querySelector('[data-side="black"]')).toBeTruthy();
+    expect(square("d5").querySelector('[data-side="black"]')).toBeTruthy();
+    expect(square("e2").querySelector("[data-side]")).toBeNull();
+  });
+
+  it("keeps both owners' markers when they share a square", () => {
+    const { square } = renderBoard({
+      targets: [
+        { square: "e4", side: "white", label: "White target" },
+        { square: "e4", side: "black", label: "Black target" },
+      ],
+    });
+    expect(square("e4").querySelectorAll("[data-side]")).toHaveLength(2);
+    expect(square("e4").getAttribute("aria-label")).toBe("e4, White target, Black target");
+  });
+
+  it("names the target after the occupant and before the move state", () => {
+    const { square } = renderBoard({
+      targets,
+      selectedSquare: "a3",
+      legalDestinations: ["h6"],
+      captureDestinations: ["d5"],
+      lastMove: { from: "c2", to: "c1" },
+    });
+    expect(square("a3").getAttribute("aria-label")).toBe("a3, White target, selected");
+    expect(square("h6").getAttribute("aria-label")).toBe("h6, White target, legal move");
+    expect(square("d5").getAttribute("aria-label")).toBe("d5, black pawn, Black target, capture");
+    expect(square("c1").getAttribute("aria-label")).toBe("c1, Black target, last move");
+  });
+
+  it("layers the marker without replacing selection, move, capture or last-move styling", () => {
+    const { square } = renderBoard({
+      targets,
+      selectedSquare: "a3",
+      legalDestinations: ["h6"],
+      captureDestinations: ["d5"],
+      lastMove: { from: "c2", to: "c1" },
+    });
+    const classes = (name: string) => square(name).className;
+    expect(classes("a3")).toMatch(/selected/);
+    expect(classes("h6")).toMatch(/legal/);
+    expect(classes("d5")).toMatch(/capture/);
+    expect(classes("c1")).toMatch(/lastMove/);
+    for (const name of ["a3", "h6", "d5", "c1"]) {
+      const marker = square(name).querySelector("[data-side]");
+      expect(marker?.getAttribute("aria-hidden")).toBe("true");
+      expect(marker?.className).toMatch(/target/);
+    }
+  });
+
+  it("stays activatable and focusable like any other square", async () => {
+    const user = userEvent.setup();
+    const { square, onSquareActivate } = renderBoard({ targets });
+    await user.click(square("a3"));
+    expect(onSquareActivate).toHaveBeenCalledWith({ square: "a3", piece: null, input: "pointer" });
+    square("a3").focus();
+    await user.keyboard("{Enter}");
+    expect(document.activeElement).toBe(square("a3"));
+    expect(onSquareActivate).toHaveBeenLastCalledWith({ square: "a3", piece: null, input: "keyboard" });
+  });
+
+  it("leaves boards without targets unchanged", () => {
+    const { board } = renderBoard();
+    expect(board.querySelectorAll("[data-side]")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: "g1, white knight" })).toBeTruthy();
+  });
+});
+
 describe("activation", () => {
   it("reports pointer activation with the square and its piece", async () => {
     const { square, onSquareActivate } = renderBoard();

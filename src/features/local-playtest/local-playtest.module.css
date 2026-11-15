@@ -47,7 +47,7 @@
   font-weight: 650;
 }
 
-.playtest button {
+.header button {
   min-height: 40px;
   padding: 10px 13px;
   border: 1px solid #cbd2c3;
@@ -58,9 +58,10 @@
   cursor: pointer;
 }
 
-.playtest button:hover:not(:disabled) { background: #eef3e7; }
+.header button:hover:not(:disabled) { background: #eef3e7; }
 .playtest .primary { border-color: #b6d849; background: #d7ff64; color: #263017; }
-.playtest :is(button, a):focus-visible { outline: 3px solid #476f29; outline-offset: 3px; }
+.playtest a:focus-visible,
+.header button:focus-visible { outline: 3px solid #476f29; outline-offset: 3px; }
 
 .intro {
   display: flex;
@@ -87,6 +88,14 @@
 }
 
 .intro > div > p:last-child { margin: 0; color: #64705d; font-size: 14px; }
+
+.intro .objective {
+  max-width: 62ch;
+  margin: 0 0 8px;
+  color: #2f3a28;
+  font-size: 15px;
+  line-height: 1.5;
+}
 
 .facts {
   display: grid;
@@ -161,6 +170,58 @@
 .sectionHeading { font-size: 14px !important; }
 .empty { margin: 0; color: #69715f; }
 .compactList { display: grid; gap: 5px; margin: 0; padding-left: 18px; font-size: 12px; }
+
+.targetList { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.targetList li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; }
+.targetList div { display: grid; gap: 2px; min-width: 0; font-size: 12px; line-height: 1.45; }
+.targetList div span { overflow-wrap: anywhere; }
+.targetList div span:last-child { color: #64705d; }
+
+/* A small copy of each board marker, so the legend works without colour. */
+.targetKey {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border: 1px solid #cbd2c3;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.targetKey::before {
+  content: "";
+  position: absolute;
+}
+
+.targetKey[data-side="white"]::before {
+  inset: 4px;
+  background:
+    linear-gradient(#416e8f, #416e8f) top left / 7px 2px,
+    linear-gradient(#416e8f, #416e8f) top left / 2px 7px,
+    linear-gradient(#416e8f, #416e8f) top right / 7px 2px,
+    linear-gradient(#416e8f, #416e8f) top right / 2px 7px,
+    linear-gradient(#416e8f, #416e8f) bottom left / 7px 2px,
+    linear-gradient(#416e8f, #416e8f) bottom left / 2px 7px,
+    linear-gradient(#416e8f, #416e8f) bottom right / 7px 2px,
+    linear-gradient(#416e8f, #416e8f) bottom right / 2px 7px;
+  background-repeat: no-repeat;
+}
+
+.targetKey[data-side="black"]::before {
+  inset: 5px;
+  border: 2px dashed #9b6127;
+  border-radius: 50%;
+}
+
+.remaining {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.remaining div { padding: 10px 12px; border: 1px solid #dce0d5; border-radius: 7px; }
+.remaining dt { color: #69715f; font-size: 11px; }
+.remaining dd { margin: 3px 0 0; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .eventLog {
   display: grid;

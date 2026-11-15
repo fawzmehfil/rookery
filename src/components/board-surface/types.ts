@@ -21,6 +21,15 @@ export type BoardMove = {
   to: BoardSquare;
 };
 
+/** A marked goal cell, e.g. a reach-target objective cell. The board only draws it. */
+export type BoardTarget = {
+  square: BoardSquare;
+  /** Picks the marker shape: white draws corner brackets, black a dashed ring. */
+  side: BoardSide;
+  /** Added to the square's accessible name, e.g. "White target". */
+  label: string;
+};
+
 export type SquareActivation = {
   square: BoardSquare;
   piece: BoardPiece | null;
@@ -45,6 +54,8 @@ export type BoardSurfaceProps = {
   lastMove?: BoardMove | null;
   /** Squares holding a king in check. */
   checkSquares?: readonly BoardSquare[];
+  /** Goal cells drawn under the move highlights. A square may hold one per side. */
+  targets?: readonly BoardTarget[];
   /** Cells that aren't part of the board. They render as gaps and can't be activated. */
   disabledSquares?: readonly BoardSquare[];
   /** Blocks every activation, e.g. after the game ends. Squares stay focusable so the position can still be read. */

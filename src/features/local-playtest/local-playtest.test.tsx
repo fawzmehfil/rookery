@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { coordinateToSquare, type Coordinate } from "@rookery/rules";
@@ -44,8 +44,10 @@ describe("local playtest", () => {
     expect(square("a1").getAttribute("aria-label")).not.toContain("White Tower");
     expect(screen.getByText("Ply").nextElementSibling?.textContent).toBe("1");
     expect(screen.getByText("Black to move")).toBeTruthy();
-    expect(screen.getByText(/White Tower moved a1 to a4/)).toBeTruthy();
-    expect(screen.getByText(/Turn changed to Black/)).toBeTruthy();
+    const events = within(screen.getByRole("region", { name: "Accepted events" }));
+    expect(events.getByText(/White Tower moved a1 to a4/)).toBeTruthy();
+    expect(events.getByText(/Turn changed to Black/)).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe("White Tower moved a1 to a4. Black to move.");
     expect(document.querySelectorAll('[aria-pressed="true"]')).toHaveLength(0);
   });
 
