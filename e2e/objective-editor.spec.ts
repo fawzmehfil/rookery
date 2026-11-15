@@ -1,18 +1,8 @@
-import { board, expect, test } from "./fixtures";
-
-const showcases = [
-  { name: "First Flight", objective: "Capture the royal" },
-  { name: "The Long Walk", objective: "Reach a target" },
-  { name: "Last Flock Standing", objective: "Eliminate all opponents" },
-];
+import { board, expect, loadShowcase, showcases, test } from "./fixtures";
 
 for (const showcase of showcases) {
   test(`loads ${showcase.name} and hands it to playtest`, async ({ editor: page }) => {
-    await page.getByRole("button", { name: `Load ${showcase.name}` }).click();
-    const confirm = page.getByRole("button", { name: `Confirm load ${showcase.name}` });
-    if (await confirm.isVisible()) await confirm.click();
-
-    await expect(page.getByRole("region", { name: showcase.name })).toBeVisible();
+    await loadShowcase(page, showcase.name);
     await expect(page.getByRole("main")).toContainText(showcase.objective);
 
     await page.getByRole("button", { name: "Open playtest" }).click();
