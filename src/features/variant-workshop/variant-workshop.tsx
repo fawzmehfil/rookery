@@ -9,31 +9,84 @@ import {
   type SessionStartError,
 } from "@/features/local-playtest/local-session";
 import { VariantEditor } from "@/features/variant-editor/variant-editor";
-import { PieceAppearanceProvider } from "@/features/piece-library/appearance";
+import { PieceAppearanceProvider, usePieceAppearance } from "@/features/piece-library/appearance";
+import { DraftControls } from "@/features/draft-persistence/draft-controls";
+import type { DraftRepository } from "@/features/draft-persistence/repository";
+import { useDraftPersistence } from "@/features/draft-persistence/use-draft-persistence";
+import styles from "@/features/draft-persistence/draft-controls.module.css";
 
-/** Owns the exact draft and one disposable local engine session for this route. */
-export function VariantWorkshop() {
-  return <PieceAppearanceProvider><WorkshopSession /></PieceAppearanceProvider>;
+export type VariantWorkshopProps = {
+  /** Replaces browser storage, e.g. with an in-memory repository in tests. */
+  repository?: DraftRepository;
+};
+
+/** Owns the exact draft, its local persistence, and one disposable local engine session for this route. */
+export function VariantWorkshop({ repository }: VariantWorkshopProps) {
+  return <PieceAppearanceProvider><WorkshopSession repository={repository} /></PieceAppearanceProvider>;
 }
 
-function WorkshopSession() {
-  const [draft, setDraft] = useState<VariantDefinition | undefined>(undefined);
+function WorkshopSession({ repository }: VariantWorkshopProps) {
+  const persistence = useDraftPersistence(repository);
+  const { tokens, setToken } = usePieceAppearance();
   const [session, setSession] = useState<LocalSession | null>(null);
 
+  if (persistence.phase === "restoring") {
+    return <main className={styles.restoring}><p role="status">Restoring your draft…</p></main>;
+  }
+
   function startPlaytest(variant: VariantDefinition): string | void {
+    if (persistence.phase !== "ready") return;
     const result = createLocalSession(variant);
 
     if (!result.ok) return describeStartError(result.error);
 
-    setDraft(variant);
+    // Only the variant is persisted; the session's GameState and history never are.
+    persistence.handoff();
     setSession(result.value);
   }
 
-  if (session) {
-    return <LocalPlaytest initialSession={session} onReturnToEditor={() => setSession(null)} />;
+  async function reset() {
+    if (persistence.phase !== "ready") return;
+    await persistence.reset();
+    Object.keys(tokens).forEach((id) => setToken(id, ""));
   }
 
-  return <VariantEditor initialVariant={draft} onPlaytest={startPlaytest} />;
+  if (session) {
+    return (
+      <LocalPlaytest
+        initialSession={session}
+        onReturnToEditor={() => {
+          persistence.returnToEditor();
+          setSession(null);
+        }}
+      />
+    );
+  }
+
+  return (
+    <VariantEditor
+      key={persistence.editorKey}
+      initialVariant={persistence.editorDraft}
+      initialMessage={persistence.editorMessage}
+      onDraftChange={persistence.onDraftChange}
+      onPlaytest={startPlaytest}
+      draftControls={(draft) => (
+        <DraftControls
+          draft={draft}
+          status={persistence.status}
+          notice={persistence.notice}
+          onReset={reset}
+          onImport={(variant, fileName) => {
+            persistence.importDraft(variant, fileName);
+            // Session-only tokens belong to the replaced draft's piece types.
+            Object.keys(tokens).forEach((id) => setToken(id, ""));
+          }}
+          lastImport={persistence.lastImport}
+          onUndoImport={persistence.undoImport}
+        />
+      )}
+    />
+  );
 }
 
 function describeStartError(error: SessionStartError): string {

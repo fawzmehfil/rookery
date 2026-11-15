@@ -2,29 +2,35 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { coordinateToSquare, squareToCoordinate, validateVariantDefinition, type Coordinate, type VariantDefinition } from "@rookery/rules";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { coordinateToSquare, squareToCoordinate, type Coordinate, type VariantDefinition } from "@rookery/rules";
 import { firstFlightVariant } from "@rookery/rules/fixtures";
 import { BoardSurface } from "@/components/board-surface";
 import { variantBoardPieces } from "@/features/variant-board/board-adapter";
 import rookeryLogo from "../../../assets/rookery.png";
 import { ObjectiveEditor } from "@/features/objective-editor/objective-editor";
 import { ShowcasePicker } from "@/features/objective-editor/showcase-picker";
-import { objectiveChoices, objectiveIssues, targetResizeError, toggleTarget } from "@/features/objective-editor/model";
+import { objectiveChoices, targetResizeError, toggleTarget } from "@/features/objective-editor/model";
 import { PieceLibrary } from "@/features/piece-library/piece-library";
 import { TypeDesigner } from "@/features/piece-library/type-designer";
 import { EditorModal } from "@/features/piece-library/modal";
-import { duplicateMovement, removeType } from "@/features/piece-library/model";
+import { removeType } from "@/features/piece-library/model";
 import { SessionPieceArt, usePieceAppearance } from "@/features/piece-library/appearance";
-import { movePiece, placePiece, playtestDraft, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, type EditResult } from "./model";
+import { draftIssues, movePiece, placePiece, playtestDraft, removePiece, replacePiece, resizeBoard, resizeImpact, sameCell, setCellDisabled, type EditResult } from "./model";
 import styles from "./variant-editor.module.css";
 
 export type VariantEditorProps = {
   initialVariant?: VariantDefinition;
   onPlaytest?: (variant: VariantDefinition) => string | void;
+  /** Receives every committed draft, including the initial one, so a container can persist it. */
+  onDraftChange?: (variant: VariantDefinition) => void;
+  /** Replaces the default status message on mount, e.g. after recovery or reset. */
+  initialMessage?: string;
+  /** Container-owned controls rendered below the introduction with the current draft, such as save status and export. */
+  draftControls?: (draft: VariantDefinition) => ReactNode;
 };
 
-export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest }: VariantEditorProps) {
+export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest, onDraftChange, initialMessage, draftControls }: VariantEditorProps) {
   const [draft, setDraft] = useState<VariantDefinition>(initialVariant);
   const [selected, setSelected] = useState<Coordinate | null>(null);
   const [tool, setTool] = useState("select");
@@ -40,10 +46,11 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
   const [cell, setCell] = useState("a1");
   const [targetPlayer,setTargetPlayer]=useState<string|null>(null);
   const [editorRevision,setEditorRevision]=useState(0);
-  const [message, setMessage] = useState("First Flight is ready to customize. Changes stay in this tab; download a valid draft to keep it.");
-  const issues = useMemo(() => [...validateVariantDefinition(draft), ...objectiveIssues(draft), ...draft.pieceTypes.flatMap((t,i) => {
-    const message=duplicateMovement(t); return message ? [{code:"SCHEMA_INVALID" as const,severity:"error" as const,path:["pieceTypes",i,"movements"],message}] : [];
-  })], [draft]);
+  const [message, setMessage] = useState(initialMessage ?? (onDraftChange
+    ? `${initialVariant.name} is ready to customize. Valid changes save automatically in this browser.`
+    : "First Flight is ready to customize. Changes stay in this tab; download a valid draft to keep it."));
+  const issues = useMemo(() => draftIssues(draft), [draft]);
+  useEffect(() => { onDraftChange?.(draft); }, [draft, onDraftChange]);
   const blocking = issues.filter(i => i.severity === "error");
   const type = draft.pieceTypes.find(t => t.id === typeId);
   const selectedPiece = draft.setup.find(p => selected && sameCell(p.at, selected));
@@ -104,6 +111,7 @@ export function VariantEditor({ initialVariant = firstFlightVariant, onPlaytest 
       <button className={styles.primary} disabled={blocking.length > 0} onClick={handoff}>{onPlaytest ? "Open playtest" : "Download valid draft"} <span aria-hidden="true">↗</span></button>
     </header>
     <div className={styles.intro}><div><p className={styles.eyebrow}>Variant workshop · 01</p><h1>Make your next move.</h1><p>Shape the board. Give your pieces a new way to play.</p></div><div className={styles.draftName}><strong>{draft.name}</strong><span>{objectiveChoices.find(o=>o.type===draft.objectives[0]?.type)?.name} · {draft.players.length} players</span></div></div>
+    {draftControls?.(draft)}
     <ShowcasePicker draft={draft} onLoad={next=>{setDraft(next);setSelected(null);setTargetPlayer(null);setTool("select");setOwner(next.players[0]?.id??"");setPaletteType(next.pieceTypes[0]?.id??"");setTypeId(next.pieceTypes[0]?.id??"");setEditorRevision(revision=>revision+1);setLibraryOpen(false);setRemovingType(null);Object.keys(tokens).forEach(id=>setToken(id,""));setFiles(String(next.board.files));setRanks(String(next.board.ranks));setPendingResize(null);setCell("a1");setMessage(`${next.name} loaded. Customize its board, pieces and objective.`);}} />
     <div className={styles.workspace}>
       <section className={styles.panel} aria-labelledby="setup-heading">

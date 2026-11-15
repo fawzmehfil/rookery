@@ -1,13 +1,15 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { VariantWorkshop } from "./variant-workshop";
 
+beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 
 it("combines independent custom-piece and objective edits, then safely restores a showcase", async () => {
   const user = userEvent.setup();
   render(<VariantWorkshop />);
+  await screen.findByRole("group", { name: "Variant editor board" });
 
   await user.click(screen.getByRole("button", { name: "Load The Long Walk" }));
   await user.click(screen.getByRole("button", { name: "+ Add piece type" }));
