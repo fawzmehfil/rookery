@@ -1,10 +1,11 @@
+import { StrictMode } from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { VariantDefinition } from "@rookery/rules";
 import { firstFlightVariant, lastFlockStandingVariant, longWalkVariant } from "@rookery/rules/fixtures";
 import { VariantWorkshop } from "@/features/variant-workshop/variant-workshop";
 import { DRAFT_STORAGE_KEY, exportDraft, MAX_IMPORT_BYTES } from "./envelope";
-import { createDraftRepository, type DraftRepository, type LoadResult } from "./repository";
+import { createDraftRepository, type DraftRepository, type LoadResult, type SaveResult } from "./repository";
 import { createMemoryDraftStorage, type DraftStorage } from "./storage";
 import { AUTOSAVE_DELAY_MS } from "./use-draft-persistence";
 
@@ -311,6 +312,109 @@ it("refuses to export a draft with blocking issues and explains why", async () =
   expect(files).toHaveLength(0);
   expect(URL.createObjectURL).not.toHaveBeenCalled();
   expect(screen.getByText(/^Resolve \d+ issues? before exporting\. Export uses the same checks as playtest\.$/)).toBeTruthy();
+});
+
+describe("stale async completion", () => {
+  type PendingSave = { variant: VariantDefinition; resolve: (result: SaveResult) => void };
+
+  /**
+   * A repository whose saves settle only when the test resolves them, as a slow
+   * server adapter would. Browser storage settles immediately, so this is the
+   * only way to open the window in which a stale result could arrive.
+   */
+  function deferredRepository(load: () => Promise<LoadResult> = () => Promise.resolve({ status: "empty" })) {
+    const saves: PendingSave[] = [];
+    const repository: DraftRepository = {
+      load,
+      save: (variant) => new Promise<SaveResult>((resolve) => saves.push({ variant, resolve })),
+      clear: () => Promise.resolve({ ok: true }),
+      markBaseline: () => {},
+    };
+    return { repository, saves };
+  }
+
+  async function openDeferred() {
+    const deferred = deferredRepository();
+    render(<VariantWorkshop repository={deferred.repository} />);
+    await screen.findByRole("group", { name: "Variant editor board" });
+    vi.useFakeTimers();
+    return deferred;
+  }
+
+  async function settle(save: PendingSave | undefined, result: SaveResult) {
+    if (!save) throw new Error("Expected a pending save");
+    await act(async () => save.resolve(result));
+  }
+
+  const saved: SaveResult = { status: "saved", savedAt: "2026-11-14T17:04:00.000Z" };
+
+  it("ignores a save result that arrives after a newer edit", async () => {
+    const { saves } = await openDeferred();
+
+    resizeFiles(6);
+    await advance(AUTOSAVE_DELAY_MS);
+    expect(saves).toHaveLength(1);
+    expect(saves[0]?.variant.board.files).toBe(6);
+
+    resizeFiles(7);
+    expect(saveStatus()).toBe("Saving…");
+
+    // The 6-file save finishes late. Reporting "Saved" now would describe a draft
+    // that is no longer on screen while the 7-file draft is still unsaved.
+    await settle(saves[0], saved);
+    expect(saveStatus()).toBe("Saving…");
+
+    await advance(AUTOSAVE_DELAY_MS);
+    expect(saves).toHaveLength(2);
+    expect(saves[1]?.variant.board.files).toBe(7);
+
+    await settle(saves[1], saved);
+    expect(saveStatus()).toContain("Saved in this browser at");
+  });
+
+  it.each<[string, SaveResult]>([
+    ["saved", saved],
+    ["failed", { status: "failed", code: "STORAGE_QUOTA_EXCEEDED", message: "Browser storage is full.", issues: [] }],
+  ])("ignores a late %s result from before a reset", async (_, lateResult) => {
+    const { saves } = await openDeferred();
+    resizeFiles(6);
+    await advance(AUTOSAVE_DELAY_MS);
+    expect(saves).toHaveLength(1);
+
+    await confirmReset();
+    expect(squareCount()).toBe(25);
+
+    await settle(saves[0], lateResult);
+
+    expect(squareCount()).toBe(25);
+    expect(saveStatus()).toBe("Autosave is on. Valid changes save in this browser.");
+  });
+
+  it("ignores an abandoned load that settles after the current one", async () => {
+    // StrictMode runs the recovery effect twice in development: the first load is
+    // abandoned by its cleanup, and only the second may decide what is shown.
+    const loads: ((result: LoadResult) => void)[] = [];
+    const { repository } = deferredRepository(() => new Promise<LoadResult>((resolve) => loads.push(resolve)));
+
+    render(<StrictMode><VariantWorkshop repository={repository} /></StrictMode>);
+    expect(loads).toHaveLength(2);
+
+    await act(async () => loads[1]?.({ status: "restored", variant: longWalkVariant, savedAt: null }));
+    expect(screen.getByRole("heading", { level: 2, name: "The Long Walk" })).toBeTruthy();
+
+    await act(async () => loads[0]?.({ status: "restored", variant: lastFlockStandingVariant, savedAt: null }));
+
+    expect(screen.getByRole("heading", { level: 2, name: "The Long Walk" })).toBeTruthy();
+    expect(squareCount()).toBe(9);
+
+    // A stale load can also corrupt the draft the hook remembers without changing
+    // the screen; the next editor remount would then show the wrong variant.
+    fireEvent.click(screen.getByRole("button", { name: "Open playtest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Return to editor" }));
+
+    expect(screen.getByRole("heading", { level: 2, name: "The Long Walk" })).toBeTruthy();
+    expect(squareCount()).toBe(9);
+  });
 });
 
 describe("JSON import", () => {
