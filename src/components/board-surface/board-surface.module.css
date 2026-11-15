@@ -14,8 +14,8 @@
   --board-last: rgba(230, 173, 109, 0.45);
   --board-check: #ff5f4a;
   --board-focus: #e6ad6d;
-  --board-target-white: #fff6dc;
-  --board-target-black: #2b1d3f;
+  --board-target-white: #416e8f;
+  --board-target-black: #9b6127;
 
   position: relative;
   container-type: inline-size;
@@ -130,7 +130,8 @@
 
 /*
  * Target markers differ by shape as well as colour: white owns corner
- * brackets, black owns a dashed ring, and both carry a small flag.
+ * brackets, black owns a dashed ring, and both carry a small flag. A light
+ * halo keeps them readable on dark squares.
  */
 .target {
   position: absolute;
@@ -150,7 +151,7 @@
     linear-gradient(var(--target-ink), var(--target-ink)) bottom right / 30% 3px,
     linear-gradient(var(--target-ink), var(--target-ink)) bottom right / 3px 30%;
   background-repeat: no-repeat;
-  filter: drop-shadow(0 0 1px var(--board-ink));
+  filter: drop-shadow(0 0 1px var(--board-light));
 }
 
 .target[data-side="black"] {

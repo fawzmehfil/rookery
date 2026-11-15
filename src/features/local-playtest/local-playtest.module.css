@@ -181,8 +181,9 @@
   position: relative;
   width: 26px;
   height: 26px;
+  border: 1px solid #cbd2c3;
   border-radius: 4px;
-  background: #839570;
+  background: #fff;
 }
 
 .targetKey::before {
@@ -193,20 +194,20 @@
 .targetKey[data-side="white"]::before {
   inset: 4px;
   background:
-    linear-gradient(#fff6dc, #fff6dc) top left / 7px 2px,
-    linear-gradient(#fff6dc, #fff6dc) top left / 2px 7px,
-    linear-gradient(#fff6dc, #fff6dc) top right / 7px 2px,
-    linear-gradient(#fff6dc, #fff6dc) top right / 2px 7px,
-    linear-gradient(#fff6dc, #fff6dc) bottom left / 7px 2px,
-    linear-gradient(#fff6dc, #fff6dc) bottom left / 2px 7px,
-    linear-gradient(#fff6dc, #fff6dc) bottom right / 7px 2px,
-    linear-gradient(#fff6dc, #fff6dc) bottom right / 2px 7px;
+    linear-gradient(#416e8f, #416e8f) top left / 7px 2px,
+    linear-gradient(#416e8f, #416e8f) top left / 2px 7px,
+    linear-gradient(#416e8f, #416e8f) top right / 7px 2px,
+    linear-gradient(#416e8f, #416e8f) top right / 2px 7px,
+    linear-gradient(#416e8f, #416e8f) bottom left / 7px 2px,
+    linear-gradient(#416e8f, #416e8f) bottom left / 2px 7px,
+    linear-gradient(#416e8f, #416e8f) bottom right / 7px 2px,
+    linear-gradient(#416e8f, #416e8f) bottom right / 2px 7px;
   background-repeat: no-repeat;
 }
 
 .targetKey[data-side="black"]::before {
   inset: 5px;
-  border: 2px dashed #2b1d3f;
+  border: 2px dashed #9b6127;
   border-radius: 50%;
 }
 
