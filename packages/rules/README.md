@@ -15,12 +15,28 @@ Framework-independent contracts and deterministic rules for Rookery variants.
 - Schema version 1 remains the immutable Sprint 1 contract and supports only `capture-royal`.
 - Schema version 2 adds the `reach-target` and `eliminate-all` objective definitions while continuing to accept `capture-royal`.
 - `objectives` remains a one-item array in version 2. Combining objectives is intentionally deferred.
-- `reach-target` stores two player-target entries, one or more cells per entry, optional eligible piece-type IDs, and `requireAction: true`. An initial placement on a target does not win; S2-02 evaluates only an accepted action that enters a target.
-- `eliminate-all` is a marker objective for the two-player game. S2-02 owns its transition and outcome behavior.
+- `reach-target` stores two player-target entries, one or more cells per entry, optional eligible piece-type IDs, and `requireAction: true`. An initial placement on a target does not win; only an accepted action that enters a target does.
+- `eliminate-all` is a marker objective for the two-player game.
 - Parsing never silently upgrades version 1 data. An editor may explicitly create a version 2 draft when the creator selects a current objective; catalog-only changes can preserve the document version when their ordinary movement data is already compatible.
 - Future incompatible document changes require a new schema version and an explicit migration function. Published definitions and games must keep their original serialized version.
 
-The engine currently evaluates `capture-royal`. Until S2-02 lands, current objectives parse, initialize safely, and return no inferred outcome rather than being misinterpreted as royal capture.
+## Outcomes
+
+`applyAction` is the one public transition path for every objective. After an accepted move it evaluates the variant's single objective through one exhaustive dispatch, using both the resulting position and the action that produced it.
+
+- **`capture-royal`:** a player wins when the opponent's starting royal is no longer on the board. Unchanged from Sprint 1.
+- **`reach-target`:** the mover wins when the moved piece lands on one of its owner's own target cells and, if `eligiblePieceTypeIds` is set, its type is listed. When that list is omitted, every piece type is eligible. Starting on a target, moving off one, or landing on the opponent's target never wins. A capture on a target is still one action and ends the game as a reach-target win.
+- **`eliminate-all`:** the mover wins when its capture removes the opponent's last piece. A non-capturing move never wins, and a capture that leaves opposing pieces passes the turn as usual. `createInitialState` rejects an eliminate-all variant in which either player starts with no pieces (`INVALID_VARIANT`), so an empty army is never an automatic win.
+- **Win data:** every win records `winnerPlayerId` and `loserPlayerId`. Reach-target adds the moved `pieceId` and the `target` coordinate; capture-royal and eliminate-all add `capturedPieceId`.
+- **Events:** an accepted action emits, all with the same new `ply`: `piece-moved`, then `piece-captured` if it captured, then either `game-ended` (carrying the outcome) or `turn-changed`.
+- **Finished games:** a win sets `activePlayerId` to `null` and stores the outcome on the state. Every later action is rejected with `GAME_ALREADY_ENDED`, and `getLegalActions` returns an empty list.
+- **Rejections:** a rejected action returns an error and no new state, so `ply` only increments on acceptance. An objective the engine does not support, which can only arrive by bypassing parsing, rejects the action with `INVALID_VARIANT` and `details.objectiveType` rather than silently continuing the game.
+- **`evaluateOutcome(variant, state)`** returns the outcome stored on the state, or the outcome the position alone implies. Only capture-royal is positional; reach-target and eliminate-all must be attributed to an action, so for them it returns the stored outcome or `null`.
+
+### Outcome limitations
+
+- A player with no legal action is not handled: there is no stalemate or forfeit rule, so such a game cannot continue. This can happen, for example, when a reach-target player has lost every piece.
+- Malformed target configuration, such as a missing player entry, is not repaired here; it simply never produces a win. Semantic validation of objectives belongs to S2-03.
 
 ## Piece-template catalog
 
@@ -72,4 +88,4 @@ Its demonstration sequence is:
 - **The Long Walk** is a 3×3 owner-relative race with mirrored `reach-target` configuration. White's runner demonstrates `a1 → a2 → a3`; Black has the mirrored target on `c1`.
 - **Last Flock Standing** is a 5×5 `eliminate-all` fixture using Chancellor, Camel, and Nightrider catalog data.
 
-These fixtures establish serialized contracts only. Their new victory behavior belongs to S2-02.
+Their victories follow the outcome rules above.
