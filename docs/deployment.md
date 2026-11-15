@@ -42,6 +42,16 @@ Every required variable must be documented in `.env.example`. Browser-exposed va
 The Sprint 2 demo runs on a Vercel preview built from the repository with the
 default Next.js settings. No `vercel.json` is needed.
 
+Hosted link: <https://rookery-omega.vercel.app> (editor:
+<https://rookery-omega.vercel.app/editor>, health:
+<https://rookery-omega.vercel.app/api/health>). It is the project's default
+`vercel.app` address, not a custom domain.
+
+Checked on 2026-11-15: `/api/health` returned
+`{"status":"ok","service":"rookery-web"}`, and `/` and `/editor` loaded
+directly with the three showcases and the objective editor. The deployed
+commit is listed in the Vercel dashboard under Deployments.
+
 1. In Vercel, import `fawzmehfil/rookery` (a repository owner may need to
    approve the Vercel GitHub app).
 2. Keep the detected framework (Next.js), install command (`npm ci` or the

@@ -8,7 +8,7 @@
 | Item | Value |
 | --- | --- |
 | Integrated base commit | _to add_ |
-| Hosted preview URL | _to add_ |
+| Hosted preview URL | <https://rookery-omega.vercel.app> |
 | CI run | _to add_ |
 | Node / npm | _to add_ |
 | OS | _to add_ |
