@@ -45,8 +45,8 @@ jobs:
       - name: Verify Sprint 1 delivery
         run: npm run verify
 
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox
 
       - name: Run browser tests against the local production server
         run: npm run test:e2e

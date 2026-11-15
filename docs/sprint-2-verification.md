@@ -12,7 +12,7 @@
 | CI run | _to add_ |
 | Node / npm | _to add_ |
 | OS | _to add_ |
-| Browsers | Chromium _version_, second browser _name and version_ |
+| Browsers | Chromium _version_, Firefox _version_ |
 | Viewports | Desktop 1280×720, narrow (Pixel 7, 412×915) |
 
 ## Release gate
@@ -34,7 +34,7 @@ npm run test:e2e
 | Production build | _to add_ |
 | Production audit | _to add_ |
 | Startup and health smoke | _to add_ |
-| Browser tests (Chromium desktop and narrow) | _to add_ |
+| Browser tests (Chromium desktop and narrow, Firefox desktop) | _to add_ |
 | `git diff --check` | _to add_ |
 
 ## Demo matrix

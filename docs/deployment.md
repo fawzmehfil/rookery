@@ -68,11 +68,12 @@ server, never against a hosted preview:
 
 ```bash
 npm run build
-npm run test:e2e:install   # first time only, downloads Chromium
+npm run test:e2e:install   # first time only, downloads Chromium and Firefox
 npm run test:e2e
 ```
 
-The tests start `npm start` on port 3200 (override with `ROOKERY_E2E_PORT`).
+Tests run in desktop Chromium, a narrow phone-sized Chromium, and desktop
+Firefox. The tests start `npm start` on port 3200 (override with `ROOKERY_E2E_PORT`).
 Failures keep a screenshot, trace, and video in `test-results/`; CI uploads
 that folder and `playwright-report/` when the browser job fails. Both folders
 are ignored by Git.
