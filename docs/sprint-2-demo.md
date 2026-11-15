@@ -5,7 +5,7 @@
 
 ## Before the demo
 
-- Hosted preview: _URL to add_ (commit _sha to add_).
+- Hosted preview: <https://rookery-omega.vercel.app/editor> (commit _sha to add_ from the Vercel dashboard).
 - Open `/api/health` on the preview and confirm `status: ok`.
 - Use a fresh browser profile or private window so no old draft is loaded.
 
