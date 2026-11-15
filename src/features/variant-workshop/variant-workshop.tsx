@@ -70,7 +70,21 @@ function WorkshopSession({ repository }: VariantWorkshopProps) {
       initialMessage={persistence.editorMessage}
       onDraftChange={persistence.onDraftChange}
       onPlaytest={startPlaytest}
-      draftControls={(draft) => <DraftControls draft={draft} status={persistence.status} notice={persistence.notice} onReset={reset} />}
+      draftControls={(draft) => (
+        <DraftControls
+          draft={draft}
+          status={persistence.status}
+          notice={persistence.notice}
+          onReset={reset}
+          onImport={(variant, fileName) => {
+            persistence.importDraft(variant, fileName);
+            // Session-only tokens belong to the replaced draft's piece types.
+            Object.keys(tokens).forEach((id) => setToken(id, ""));
+          }}
+          lastImport={persistence.lastImport}
+          onUndoImport={persistence.undoImport}
+        />
+      )}
     />
   );
 }

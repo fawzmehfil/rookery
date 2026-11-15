@@ -37,7 +37,15 @@ export type DraftPersistence =
       handoff: () => VariantDefinition;
       returnToEditor: () => void;
       reset: () => Promise<void>;
+      /** Replaces the draft with an already validated import and saves it immediately. */
+      importDraft: (variant: VariantDefinition, fileName: string) => void;
+      /** Restores the draft from before the last import; available until the next edit, reset, or import. */
+      undoImport: () => void;
+      lastImport: LastImport | null;
     }>;
+
+export type LastImport = Readonly<{ name: string; fileName: string; previousName: string }>;
+type ImportRecord = Readonly<{ info: LastImport; previous: VariantDefinition }>;
 
 type Ready = Extract<DraftPersistence, { phase: "ready" }>;
 type EditorState = Readonly<{ draft: VariantDefinition; key: number; message: string | undefined }>;
@@ -52,6 +60,7 @@ export function useDraftPersistence(injected?: DraftRepository): DraftPersistenc
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [status, setStatus] = useState<SaveStatus>({ kind: "idle", lastSavedAt: null });
   const [notice, setNotice] = useState<RecoveryNotice | null>(null);
+  const [lastImport, setLastImport] = useState<ImportRecord | null>(null);
 
   const repositoryRef = useRef<DraftRepository | null>(null);
   const latestRef = useRef<VariantDefinition | null>(null);
@@ -156,6 +165,8 @@ export function useDraftPersistence(injected?: DraftRepository): DraftPersistenc
     revisionRef.current += 1;
     pausedRef.current = false;
     setNotice((current) => (current?.kind === "failed" ? null : current));
+    // Undo would discard this edit, so it is only offered until the next change.
+    setLastImport(null);
     setStatus({ kind: "pending" });
 
     if (timerRef.current !== null) clearTimeout(timerRef.current);
@@ -166,6 +177,7 @@ export function useDraftPersistence(injected?: DraftRepository): DraftPersistenc
     if (!pausedRef.current) flush();
     const draft = latestRef.current ?? freshDefault();
     mountedDraftRef.current = draft;
+    setLastImport(null);
     setEditor((current) => (current ? { ...current, draft, message: undefined } : current));
     return draft;
   }, [flush]);
@@ -191,6 +203,7 @@ export function useDraftPersistence(injected?: DraftRepository): DraftPersistenc
     latestRef.current = draft;
     mountedDraftRef.current = draft;
     setNotice((current) => (current?.kind === "failed" ? null : current));
+    setLastImport(null);
     setStatus(cleared && !cleared.ok ? { kind: "error", code: cleared.code, message: cleared.message } : { kind: "idle", lastSavedAt: null });
     setEditor((current) => ({
       draft,
@@ -198,6 +211,34 @@ export function useDraftPersistence(injected?: DraftRepository): DraftPersistenc
       message: "Reset to First Flight. The saved draft was cleared.",
     }));
   }, []);
+
+  /** Replaces the editor's draft, remounts the editor, and saves at once rather than after the debounce. */
+  const replaceDraft = useCallback((draft: VariantDefinition, message: string) => {
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+    timerRef.current = null;
+    revisionRef.current += 1;
+    const revision = revisionRef.current;
+    pausedRef.current = false;
+    latestRef.current = draft;
+    mountedDraftRef.current = draft;
+    setNotice((current) => (current?.kind === "failed" ? null : current));
+    setEditor((current) => ({ draft, key: (current?.key ?? 0) + 1, message }));
+
+    const repository = repositoryRef.current;
+    if (repository) void repository.save(draft).then((result) => applySaveResult(result, revision));
+  }, [applySaveResult]);
+
+  const importDraft = useCallback((variant: VariantDefinition, fileName: string) => {
+    const previous = latestRef.current ?? freshDefault();
+    replaceDraft(variant, `Imported ${variant.name} from ${fileName}.`);
+    setLastImport({ info: { name: variant.name, fileName, previousName: previous.name }, previous });
+  }, [replaceDraft]);
+
+  const undoImport = useCallback(() => {
+    if (!lastImport) return;
+    replaceDraft(lastImport.previous, `Import undone. ${lastImport.previous.name} is back.`);
+    setLastImport(null);
+  }, [lastImport, replaceDraft]);
 
   if (!editor) return { phase: "restoring" };
 
@@ -212,6 +253,9 @@ export function useDraftPersistence(injected?: DraftRepository): DraftPersistenc
     handoff,
     returnToEditor,
     reset,
+    importDraft,
+    undoImport,
+    lastImport: lastImport?.info ?? null,
   };
   return ready;
 }

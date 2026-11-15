@@ -1,9 +1,9 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { VariantDefinition } from "@rookery/rules";
-import { longWalkVariant } from "@rookery/rules/fixtures";
+import { firstFlightVariant, lastFlockStandingVariant, longWalkVariant } from "@rookery/rules/fixtures";
 import { VariantWorkshop } from "@/features/variant-workshop/variant-workshop";
-import { DRAFT_STORAGE_KEY, exportDraft } from "./envelope";
+import { DRAFT_STORAGE_KEY, exportDraft, MAX_IMPORT_BYTES } from "./envelope";
 import { createDraftRepository, type DraftRepository, type LoadResult } from "./repository";
 import { createMemoryDraftStorage, type DraftStorage } from "./storage";
 import { AUTOSAVE_DELAY_MS } from "./use-draft-persistence";
@@ -311,4 +311,185 @@ it("refuses to export a draft with blocking issues and explains why", async () =
   expect(files).toHaveLength(0);
   expect(URL.createObjectURL).not.toHaveBeenCalled();
   expect(screen.getByText(/^Resolve \d+ issues? before exporting\. Export uses the same checks as playtest\.$/)).toBeTruthy();
+});
+
+describe("JSON import", () => {
+  /** Opens the workshop, optionally saves a 6-file edit, then returns to real timers for FileReader. */
+  async function openForImport(storage: DraftStorage = createMemoryDraftStorage(), { edited = false } = {}) {
+    const opened = await openWorkshop(storage);
+    if (edited) {
+      resizeFiles(6);
+      await advance(AUTOSAVE_DELAY_MS);
+    }
+    vi.useRealTimers();
+    return opened;
+  }
+
+  function chooseFile(name: string, contents: string) {
+    const file = new File([contents], name, { type: "application/json" });
+    fireEvent.change(screen.getByLabelText("Import JSON"), { target: { files: [file] } });
+  }
+
+  async function confirmImport(name: string) {
+    const confirm = await screen.findByRole("button", { name: `Confirm import ${name}` });
+    await act(async () => {
+      fireEvent.click(confirm);
+    });
+  }
+
+  const exportedText = (variant: VariantDefinition) => {
+    const result = exportDraft(variant);
+    if (!result.ok) throw new Error(`Expected ${variant.name} to export`);
+    return result.text;
+  };
+
+  it.each([
+    [firstFlightVariant, 25, "First Flight: 5 × 5 board, Capture the royal, 3 piece types, 6 starting pieces."],
+    [longWalkVariant, 9, "The Long Walk: 3 × 3 board, Reach a target, 1 piece type, 2 starting pieces."],
+    [lastFlockStandingVariant, 25, "Last Flock Standing: 5 × 5 board, Eliminate all opponents, 4 piece types,"],
+  ])("imports showcase %#: summarises, confirms, replaces, and saves immediately", async (variant, squares, summary) => {
+    const { storage, write } = await openForImport(createMemoryDraftStorage(), { edited: true });
+    write.mockClear();
+
+    chooseFile("shared.rookery.json", exportedText(variant));
+    await screen.findByRole("button", { name: `Confirm import ${variant.name}` });
+    expect(screen.getByRole("group", { name: "Confirm replacement" }).textContent).toContain(summary);
+    expect(write).not.toHaveBeenCalled();
+
+    await confirmImport(variant.name);
+
+    expect(squareCount()).toBe(squares);
+    expect(storedVariant(storage)).toEqual(variant);
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(editorMessage()).toContain(`Imported ${variant.name} from shared.rookery.json.`);
+    expect(document.activeElement).toBe(screen.getByRole("group", { name: "Import result" }));
+  });
+
+  it("loads an independent copy that later edits never share with the file or fixture", async () => {
+    const { storage } = await openForImport();
+    chooseFile("walk.json", exportedText(longWalkVariant));
+    await confirmImport("The Long Walk");
+
+    resizeFiles(4);
+
+    expect(squareCount()).toBe(12);
+    expect(longWalkVariant.board.files).toBe(3);
+    expect(storedVariant(storage)?.board.files).toBe(3);
+  });
+
+  it("cancels an import without changing the draft or storage", async () => {
+    const { storage, write } = await openForImport(createMemoryDraftStorage(), { edited: true });
+    const before = storage.read(DRAFT_STORAGE_KEY);
+    write.mockClear();
+
+    chooseFile("walk.json", exportedText(longWalkVariant));
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel replacement" }));
+
+    expect(squareCount()).toBe(30);
+    expect(storage.read(DRAFT_STORAGE_KEY)).toBe(before);
+    expect(write).not.toHaveBeenCalled();
+    expect(screen.getByText("Import cancelled. Your draft is unchanged.")).toBeTruthy();
+  });
+
+  it("undoes an import, restoring and saving the previous draft", async () => {
+    const { storage } = await openForImport(createMemoryDraftStorage(), { edited: true });
+    chooseFile("walk.json", exportedText(longWalkVariant));
+    await confirmImport("The Long Walk");
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Undo import" }));
+    });
+
+    expect(squareCount()).toBe(30);
+    expect(storedVariant(storage)?.board.files).toBe(6);
+    expect(editorMessage()).toContain("Import undone. First Flight is back.");
+    expect(screen.queryByRole("button", { name: "Undo import" })).toBeNull();
+  });
+
+  it("stops offering undo after the next edit", async () => {
+    await openForImport();
+    chooseFile("walk.json", exportedText(longWalkVariant));
+    await confirmImport("The Long Walk");
+    expect(screen.getByRole("button", { name: "Undo import" })).toBeTruthy();
+
+    resizeFiles(4);
+
+    expect(screen.queryByRole("button", { name: "Undo import" })).toBeNull();
+  });
+
+  it("accepts a bare Sprint 1 variant file and says it has no envelope", async () => {
+    await openForImport();
+
+    chooseFile("first-flight.json", JSON.stringify(firstFlightVariant, null, 2));
+
+    await screen.findByRole("button", { name: "Confirm import First Flight" });
+    expect(screen.getByRole("group", { name: "Confirm replacement" }).textContent).toContain("older Rookery variant file without a draft envelope");
+  });
+
+  const longWalkEnvelope = (overrides: Record<string, unknown>) => JSON.stringify({
+    format: "rookery.variant-draft",
+    envelopeVersion: 1,
+    variantSchemaVersion: 2,
+    variant: longWalkVariant,
+    ...overrides,
+  });
+  const brokenFirstFlight = {
+    ...firstFlightVariant,
+    setup: [
+      ...firstFlightVariant.setup.filter(({ id }) => id !== "white-sovereign"),
+      { id: "white-tower", typeId: "tower", ownerId: "white", at: { file: 4, rank: 4 } },
+    ],
+  };
+
+  it.each([
+    ["notes.txt", "remember to buy milk", "IMPORT_NOT_JSON", []],
+    ["empty.json", "   ", "IMPORT_EMPTY", []],
+    ["array.json", "[1, 2, 3]", "ENVELOPE_MALFORMED", []],
+    ["future.json", longWalkEnvelope({ envelopeVersion: 2 }), "ENVELOPE_UNSUPPORTED_VERSION", ["envelopeVersion"]],
+    ["hostile.json", `{"__proto__":{"polluted":true},${longWalkEnvelope({}).slice(1)}`, "ENVELOPE_MALFORMED", ["__proto__"]],
+    ["zero-files.json", longWalkEnvelope({ variant: { ...longWalkVariant, board: { files: 0, ranks: 3, disabledCells: [] } } }), "VARIANT_INVALID", ["SCHEMA_INVALID", "board.files"]],
+    ["broken.json", JSON.stringify(brokenFirstFlight), "VARIANT_INVALID", ["DUPLICATE_PIECE_ID", "OVERLAPPING_PIECES", "INVALID_ROYAL_COUNT"]],
+  ])("rejects %s with %s and leaves the draft and storage deeply unchanged", async (name, contents, code, mentions) => {
+    const { storage, write } = await openForImport(createMemoryDraftStorage(), { edited: true });
+    const storedBefore = storage.read(DRAFT_STORAGE_KEY);
+    const boardBefore = board().innerHTML;
+    write.mockClear();
+
+    chooseFile(name, contents);
+
+    const alert = await screen.findByRole("alert", { name: `Import failed: ${name}` });
+    expect(alert.textContent).toContain(code);
+    for (const mention of mentions) expect(alert.textContent).toContain(mention);
+    expect(alert.textContent).toContain("Your current draft and its saved copy are unchanged.");
+    expect(document.activeElement).toBe(alert);
+    expect(screen.queryByRole("group", { name: "Confirm replacement" })).toBeNull();
+    expect(board().innerHTML).toBe(boardBefore);
+    expect(storage.read(DRAFT_STORAGE_KEY)).toBe(storedBefore);
+    expect(write).not.toHaveBeenCalled();
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  it("rejects an oversized file from its size without reading it", async () => {
+    const { storage } = await openForImport();
+    const readAsText = vi.spyOn(FileReader.prototype, "readAsText");
+
+    chooseFile("huge.json", "x".repeat(MAX_IMPORT_BYTES + 1));
+
+    const alert = await screen.findByRole("alert", { name: "Import failed: huge.json" });
+    expect(alert.textContent).toContain("IMPORT_TOO_LARGE");
+    expect(readAsText).not.toHaveBeenCalled();
+    expect(storage.read(DRAFT_STORAGE_KEY)).toBeNull();
+  });
+
+  it("replaces an unrecoverable stored draft with a confirmed import", async () => {
+    const storage = createMemoryDraftStorage({ initial: { [DRAFT_STORAGE_KEY]: "{oops" } });
+    await openForImport(storage);
+    expect(screen.getByRole("alert", { name: "Your saved draft could not be restored" }).textContent).toContain("use Import JSON");
+
+    chooseFile("walk.json", exportedText(longWalkVariant));
+    await confirmImport("The Long Walk");
+
+    expect(storedVariant(storage)).toEqual(longWalkVariant);
+    expect(screen.queryByRole("alert", { name: "Your saved draft could not be restored" })).toBeNull();
+  });
 });

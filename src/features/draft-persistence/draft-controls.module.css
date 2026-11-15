@@ -6,6 +6,14 @@
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .feedback { grid-column: 1 / -1; margin: 0; font-size: 12px; line-height: 1.6; color: #5b6654; overflow-wrap: anywhere; }
 .feedback:empty { display: none; }
+/* A visible label wraps a real, focusable file input so keyboard and screen-reader users get native behavior. */
+.actions .fileButton { position: relative; display: inline-flex; align-items: center; margin: 0; padding: 10px 13px; border: 1px solid #cbd2c3; border-radius: 5px; background: #fff; color: #293622; font-size: 12px; font-weight: 600; cursor: pointer; }
+.actions .fileButton:hover { background: #eef3e7; }
+.actions .fileButton:focus-within { outline: 3px solid #476f29; outline-offset: 3px; }
+.actions .fileButton input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.notice { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border: 1px solid #9caf7f; border-radius: 7px; background: #f0f7de; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.notice p { margin: 0; }
+.notice:focus-visible { outline: 3px solid #476f29; outline-offset: 3px; }
 .alert { grid-column: 1 / -1; margin: 0; padding: 14px; border: 1px solid #d1aa49; border-radius: 7px; background: #fff5d8; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .alert h3 { margin: 0 0 6px; font-size: 13px; }
 .alert ul { margin: 6px 0; padding-left: 18px; }

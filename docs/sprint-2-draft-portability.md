@@ -224,7 +224,12 @@ export function useDraftPersistence(repository?: DraftRepository):
       handoff(): VariantDefinition;   // flushes, then keeps the latest draft for the next mount
       returnToEditor(): void;
       reset(): Promise<void>;         // clears storage, loads a fresh First Flight baseline
+      importDraft(variant: VariantDefinition, fileName: string): void; // replaces, remounts, saves now
+      undoImport(): void;             // restores and saves the draft from before the import
+      lastImport: LastImport | null;  // cleared by the next edit, reset, import, or playtest
     }>;
+
+export type LastImport = Readonly<{ name: string; fileName: string; previousName: string }>;
 ```
 
 - Without an injected repository, the hook creates one over
@@ -251,6 +256,9 @@ export function DraftControls(props: {
   status: SaveStatus;
   notice: RecoveryNotice | null;
   onReset: () => Promise<void>;
+  onImport: (variant: VariantDefinition, fileName: string) => void; // receives validated imports only
+  lastImport: LastImport | null;
+  onUndoImport: () => void;
 }): JSX.Element;
 ```
 
@@ -267,6 +275,26 @@ blocking issues produces no file; a polite message says how many issues to
 resolve, because export uses the same gate as playtest. The button stays
 enabled and focusable so that explanation is always reachable. Exporting never
 reads or writes browser storage.
+
+**Import JSON** is a visible label wrapping a real file input
+(`accept=".json,application/json"`), so it works with the keyboard and screen
+readers. The import flow:
+
+1. A file above `MAX_IMPORT_BYTES` is rejected from `file.size` without being read.
+2. Otherwise `readFileText` (`read-file.ts`, using `FileReader`) reads it as
+   untrusted text, and `parseImportText` runs every validation step.
+3. On failure, a focused `role="alert"` titled "Import failed: <file name>"
+   shows the code, guidance, and up to ten issues as `CODE · path: message`.
+   The draft, its saved copy, and the board are untouched.
+4. On success, nothing changes yet. A `ConfirmChange` dialog shows a summary
+   (name, board size, objective, piece-type and piece counts, and a note for
+   legacy files without an envelope). **Cancel** leaves everything unchanged.
+5. On confirmation, the workshop calls `importDraft`, clears session-only
+   tokens, and the remounted controls focus an "Import result" notice with
+   **Undo import**.
+
+The file input is cleared after each choice, so the same file can be chosen
+again after fixing it.
 
 Integration points (all additive and optional, so editor-only usage and tests
 are unchanged):
@@ -296,6 +324,7 @@ session-only piece tokens after `reset()`.
 | `IMPORT_TOO_LARGE` | File above 1 MiB | Choose a Rookery export. |
 | `IMPORT_EMPTY` | Empty or whitespace-only file | Choose a Rookery export. |
 | `IMPORT_NOT_JSON` | Text is not valid JSON | Choose a Rookery export. |
+| `IMPORT_READ_FAILED` | The browser could not read the chosen file | Choose it again or pick another export. |
 | `VARIANT_INVALID` | Structural or semantic variant issues | Each issue keeps its own validator code and field path, such as `SCHEMA_INVALID` at `board.files` or `INVALID_ROYAL_COUNT` at `players.0`. |
 
 ## Autosave and recovery
@@ -330,11 +359,13 @@ session-only piece tokens after `reset()`.
 independent copy of First Flight, and marks it as the baseline. Cancelling
 changes nothing.
 
-**Import** never mutates anything until every validation step passes. A failed
-import leaves the in-memory draft and the stored copy unchanged. A valid import
-shows a summary, asks for confirmation when the current draft has unsaved edits,
-replaces the draft with an independent canonical copy, saves it immediately,
-and offers "Undo import" for the rest of the session.
+**Import** never mutates anything until every validation step passes and the
+creator confirms. A failed import leaves the in-memory draft and the stored copy
+unchanged. A valid import always shows its summary for confirmation, following
+S2-05's rule that work is never discarded without confirmation. It then replaces
+the draft with an independent canonical copy, saves it immediately, and offers
+**Undo import**. Undo restores and saves the previous draft; it is offered until
+the next edit, reset, import, or playtest, so it can never discard later work.
 
 ## Migration extension point
 

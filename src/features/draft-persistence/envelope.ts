@@ -22,6 +22,7 @@ export type DraftErrorCode =
   | "IMPORT_TOO_LARGE"
   | "IMPORT_EMPTY"
   | "IMPORT_NOT_JSON"
+  | "IMPORT_READ_FAILED"
   | "VARIANT_INVALID";
 
 export const draftErrorMessages: Readonly<Record<DraftErrorCode, string>> = {
@@ -34,6 +35,7 @@ export const draftErrorMessages: Readonly<Record<DraftErrorCode, string>> = {
   IMPORT_TOO_LARGE: "This file is larger than 1 MiB. Choose a Rookery export.",
   IMPORT_EMPTY: "This file is empty. Choose a Rookery export.",
   IMPORT_NOT_JSON: "This file is not valid JSON. Choose a Rookery export.",
+  IMPORT_READ_FAILED: "The browser could not read this file. Choose it again or pick another export.",
   VARIANT_INVALID: "This variant has problems to fix before it can be loaded.",
 };
 
