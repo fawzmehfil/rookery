@@ -20,7 +20,6 @@ export function ObjectiveEditor({draft,onChange,targetPlayer,onTargetPlayerChang
     {pending && <ConfirmChange message="Switching objectives will discard the configured targets and eligible-piece settings. Board, pieces and movement will stay intact." confirmLabel="Confirm objective switch" onCancel={()=>setPending(null)} onConfirm={()=>{onChange(setObjective(draft,defaultObjective(pending,draft)));onTargetPlayerChange(null);setPending(null);}} />}
     {objective?.type==="capture-royal" && <p className={styles.help}>Each player needs exactly one placed royal piece. Mark the appropriate <a href="#movement-panel">piece type as royal in Movement rules</a>. This objective uses capture, not check or checkmate.</p>}
     {objective?.type==="eliminate-all" && <p className={styles.help}>Capture the opponent&apos;s final piece to win. Both players must begin with at least one piece; royal designation has no special effect on this objective.</p>}
-    {objective?.type!=="capture-royal" && <p className={styles.help}>You can configure this objective and playtest movement. Automatic victory checking for this objective is not available in this build yet.</p>}
     {objective?.type==="reach-target" && <>
       <p className={styles.help}>Starting on a target does not win. An eligible piece must complete an accepted move onto its own player&apos;s target. Board-selection mode edits targets instead of moving or placing pieces.</p>
       <div className={styles.targetColumns}>{draft.players.map((player,playerIndex)=>{
