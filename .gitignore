@@ -19,6 +19,8 @@ npm-debug.log*
 # Test output
 coverage/
 playwright-report/
+/test-results/
+/blob-report/
 
 # Editors and operating systems
 .DS_Store
