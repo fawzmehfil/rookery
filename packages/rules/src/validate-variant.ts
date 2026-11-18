@@ -8,7 +8,10 @@ export type ValidationCode =
   | "TURN_ORDER_MISSING_PLAYER" | "DISABLED_CELL_OUT_OF_BOUNDS" | "DUPLICATE_DISABLED_CELL"
   | "UNKNOWN_PIECE_TYPE" | "UNKNOWN_OWNER" | "PIECE_OUT_OF_BOUNDS" | "PIECE_ON_DISABLED_CELL"
   | "OVERLAPPING_PIECES" | "INVALID_ROYAL_COUNT" | "NO_CAPTURE_MOVEMENT"
-  | "NO_INITIAL_ACTIONS" | "UNUSED_PIECE_TYPE";
+  | "NO_INITIAL_ACTIONS" | "UNUSED_PIECE_TYPE" | "NO_TARGET" | "UNASSIGNED_TARGET"
+  | "TARGET_OUT_OF_BOUNDS" | "TARGET_DISABLED" | "DUPLICATE_TARGET_CELL" 
+  | "NO_ELIGIBLE_PIECES" | "UNKNOWN_ELIGIBLE_PIECE_TYPE" | "DUPLICATE_ELIGIBLE_PIECE_TYPE_ID" 
+  | "NO_INITIAL_PIECES" | "PIECE_INITIALIZED_ON_TARGET";
 
 export type ValidationIssue = Readonly<{
   code: ValidationCode;
@@ -108,6 +111,58 @@ export function validateVariantDefinition(input: unknown): readonly ValidationIs
       };
       if (![...new Set(owned.map((piece) => piece.typeId))].some(canCaptureOnBoard))
         add("NO_CAPTURE_MOVEMENT", ["players", i], `${p.name} needs a placed piece with capture-capable movement usable on this board to win.`);
+    });
+  }
+  if (v.objectives[0]?.type === "reach-target") {
+    const configuredPlayers = new Set<string>();
+    v.objectives[0]?.targets.forEach((target, i) => {
+      if (!players.has(target.playerId)) {
+        add("UNASSIGNED_TARGET", ["objectives", 0, "targets", i, "playerId"], `Unknown player ${target.playerId}; assign this target to a defined player.`);}
+      configuredPlayers.add(target.playerId);
+      const seenCells = new Set<string>();
+      // Check Target Cells
+      target.cells.forEach((cell, j) => {
+        const path = ["objectives", 0, "targets", i, "cells", j];
+        if (!onBoard(cell)) {
+          add("TARGET_OUT_OF_BOUNDS", path, "Target must be inside the board.");}
+        const key = coordinateKey(cell);
+        if (disabled.has(key)) {
+          add("TARGET_DISABLED", path, "Target cannot be on a disabled cell.");}
+        if (seenCells.has(key)) {
+          add("DUPLICATE_TARGET_CELL", path, "This target cell is already listed.");}
+        seenCells.add(key);
+      });
+      // Check Eligible Pieces
+      const eligibleIds = target.eligiblePieceTypeIds ?? v.pieceTypes.map((pieceType) => pieceType.id);
+      const seenTypes = new Set<string>();
+      eligibleIds.forEach((typeId, j) => {
+        const path = ["objectives", 0, "targets", i, "eligiblePieceTypeIds", j];
+        if (!types.has(typeId)) {
+          add("UNKNOWN_ELIGIBLE_PIECE_TYPE", path, `Unknown piece type ${typeId}.`);}
+        if (seenTypes.has(typeId)) {
+          add("DUPLICATE_ELIGIBLE_PIECE_TYPE_ID", path, `Piece type ${typeId} is listed more than once.`);}
+        seenTypes.add(typeId);
+      });
+      const eligiblePieces = v.setup.filter((piece) => piece.ownerId === target.playerId && eligibleIds.includes(piece.typeId) && types.has(piece.typeId));
+      if (players.has(target.playerId) && eligiblePieces.length === 0) {
+        add("NO_ELIGIBLE_PIECES", ["objectives", 0, "targets", i], "This player needs at least one initially placed eligible piece.");}
+      const targetCells = new Set(target.cells.map(coordinateKey));
+      eligiblePieces.forEach((piece, j) => {
+        if (targetCells.has(coordinateKey(piece.at))) {
+          add("PIECE_INITIALIZED_ON_TARGET", ["setup", v.setup.indexOf(piece), "at"], "An eligible piece cannot start on its target cell.");}
+      });
+    });
+    v.players.forEach((player, i) => {
+      if (!configuredPlayers.has(player.id)) {
+        add("NO_TARGET", ["players", i], `${player.name} needs a target configuration.`);
+      }
+    });
+  }
+  if (v.objectives[0]?.type === "eliminate-all") {
+    v.players.forEach((player, i) => {
+      const owned = v.setup.filter((piece) => piece.ownerId === player.id);
+      if (owned.length === 0) {
+        add("NO_INITIAL_PIECES", ["players", i], `${player.name} needs at least one starting piece.`);}
     });
   }
   // Avoid cascading engine diagnostics when references or positions are invalid.

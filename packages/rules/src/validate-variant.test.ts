@@ -6,6 +6,26 @@ import type { ValidationCode } from "./validate-variant";
 const draft = () => JSON.parse(JSON.stringify(firstFlightVariant));
 type Draft = ReturnType<typeof draft>;
 
+// Modfify Draft for Reach Target Test and Eliminate All Cases
+const reachTargetDraft = () => {
+  const v = draft();
+  v.schemaVersion = 2;
+  const emptyCells: { file: number; rank: number }[] = [];
+  for (let rank = 0; rank < v.board.ranks; rank++) {
+    for (let file = 0; file < v.board.files; file++) {
+      const occupied = v.setup.some((p: { at: { file: number; rank: number } }) =>p.at.file === file && p.at.rank === rank);
+      const disabled = v.board.disabledCells.some((cell: { file: number; rank: number }) =>cell.file === file && cell.rank === rank);
+      if (!occupied && !disabled) emptyCells.push({ file, rank });
+  }}
+  v.objectives = [{type: "reach-target", requireAction: true, targets: v.players.map((player: { id: string }, i: number) => ({playerId: player.id, cells: [emptyCells[i]],}))}];
+  return v;
+};
+const eliminateAllDraft = () => {
+  const v = draft();
+  v.schemaVersion = 2; v.objectives = [{ type: "eliminate-all" }];
+  return v;
+};
+
 describe("semantic validation", () => {
   it("accepts First Flight and its JSON round trip without modifying input", () => {
     const v = draft();
@@ -112,4 +132,31 @@ describe("semantic validation", () => {
     expect(() => validateVariantDefinition(input)).not.toThrow();
     expect(validateVariantDefinition(input)[0]).toMatchObject({ code: "SCHEMA_INVALID", severity: "error" });
   });
+
+  const targetCases: [ValidationCode, (v: Draft) => void, (string | number)[]][] = [
+    ["TARGET_OUT_OF_BOUNDS", v => {v.objectives[0].targets[0].cells[0] = { file: 6, rank: 0 };}, ["objectives", 0, "targets", 0, "cells", 0]],
+    ["TARGET_DISABLED", v => {const cell = v.objectives[0].targets[0].cells[0];v.board.disabledCells.push({ ...cell });}, ["objectives", 0, "targets", 0, "cells", 0]],
+    ["DUPLICATE_TARGET_CELL", v => {const cell = v.objectives[0].targets[0].cells[0];v.objectives[0].targets[0].cells.push({ ...cell });}, ["objectives", 0, "targets", 0, "cells", 1]],
+    ["UNASSIGNED_TARGET", v => {v.objectives[0].targets[0].playerId = "unknown";}, ["objectives", 0, "targets", 0, "playerId"]],
+    ["NO_TARGET", v => {v.objectives[0].targets[1].playerId = v.objectives[0].targets[0].playerId;}, ["players", 1]],
+    ["UNKNOWN_ELIGIBLE_PIECE_TYPE", v => {v.objectives[0].targets[0].eligiblePieceTypeIds = ["unknown"];}, ["objectives", 0, "targets", 0, "eligiblePieceTypeIds", 0]],
+    ["DUPLICATE_ELIGIBLE_PIECE_TYPE_ID", v => {const typeId = v.pieceTypes[0].id; v.objectives[0].targets[0].eligiblePieceTypeIds = [typeId, typeId];}, ["objectives", 0, "targets", 0, "eligiblePieceTypeIds", 1]],
+    ["NO_ELIGIBLE_PIECES", v => {const unusedType = { ...v.pieceTypes[0], id: "unused-eligible" };v.pieceTypes.push(unusedType);v.objectives[0].targets[0].eligiblePieceTypeIds = ["unused-eligible"];}, ["objectives", 0, "targets", 0]],
+    ["PIECE_INITIALIZED_ON_TARGET", v => {const piece = v.setup.find((p: { ownerId: string }) => p.ownerId === v.objectives[0].targets[0].playerId); v.objectives[0].targets[0].cells[0] = { ...piece.at };}, ["setup", 0, "at"]],
+  ];
+  it.each(targetCases)("reports reach-target issue %s at a stable field path", (code, change, path) => {
+    const v = reachTargetDraft(); change(v);
+    const issues = validateVariantDefinition(v);
+    expect(issues).toContainEqual({code, path, severity: "error", message: expect.any(String)});
+    expect(validateVariantDefinition(v)).toEqual(issues);
+  });
+
+  it("requires each player to have at least one starting piece for eliminate-all", () => {
+    const v = eliminateAllDraft();
+    const secondPlayer = v.players[1].id;
+    v.setup = v.setup.filter((piece: { ownerId: string }) => piece.ownerId !== secondPlayer);
+    const issues = validateVariantDefinition(v);
+    expect(issues).toContainEqual({code: "NO_INITIAL_PIECES", path: ["players", 1], severity: "error", message: expect.any(String),});
+  });
+
 });
