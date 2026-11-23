@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s · Rookery",
   },
   description:
-    "Create, share, remix, and play expressive chess variants in your browser.",
+    "Create, validate, and immediately playtest expressive chess variants in your browser.",
 };
 
 export const viewport: Viewport = {

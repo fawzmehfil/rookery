@@ -9,12 +9,12 @@ without a recorded run.
 
 | Item | Value |
 | --- | --- |
-| Integrated base commit | `ecce9bf` on `main` (S2-01 through S2-07 merged, including S2-03 objective validation and the Next.js security patch) |
-| Release candidate | Pull request #22 rebased onto `ecce9bf`; the committed evidence was recaptured from this candidate after the accessibility fixes below. |
-| Hosted preview URL | <https://rookery-omega.vercel.app> |
-| Production deployment commit | `ecce9bf`, reported **READY** by Vercel on 2026-11-23. The live editor shows Export JSON, Import JSON, and Reset draft. |
-| Candidate deployment | Vercel deployment `dpl_GBRAYYo7DHGgL4shRcZ1GXHwh9Sr` for application/evidence commit `fbc747e`, reported **READY**. Authenticated requests to `/api/health`, `/`, and `/editor` returned HTTP 200. |
-| CI run | Pass on the final pull request #22 candidate after rebasing onto `ecce9bf`. |
+| Final release | Tag `sprint-2-demo` at `a4cc5f9` on `main`, including S2-01 through S2-09 and the Next.js security patch |
+| Release pull requests | #22 supplied the browser/deployment evidence; #27 completed the product-truth consolidation. |
+| Hosted production URL | <https://rookery-omega.vercel.app> |
+| Production deployment | Vercel deployment `dpl_EgEB3ZCwTWjdydqZ5dzRH8d9vrYk` for `a4cc5f9`, reported **READY** on 2026-11-23. `/api/health`, `/`, and `/editor` returned HTTP 200 with no warning, error, or fatal runtime logs. |
+| Evidence-capture deployment | Vercel deployment `dpl_GBRAYYo7DHGgL4shRcZ1GXHwh9Sr` for application/evidence commit `fbc747e`, reported **READY**. Authenticated requests to `/api/health`, `/`, and `/editor` returned HTTP 200. |
+| CI runs | Pull requests #22 and #27 passed the complete repository gate and all 96 browser scenarios. |
 | Clean environment | Fresh clone, `npm ci`, Node 22.23.4, npm 10.9.9, Ubuntu 24.04 |
 | Second environment | Windows, Node 22.15.0, `npm run build` and `npm run test:e2e` |
 | Browsers | Chromium 153 and Firefox 155 (Playwright 1.63.0) |
@@ -54,11 +54,11 @@ server. Manual rows are presentation checks.
 
 | Demo step | Automated test | Result |
 | --- | --- | --- |
-| Open the hosted preview with no local setup | Manual run of the demo on the hosted preview, nothing installed, 2026-11-15 | Pass |
+| Open the hosted demo with no local setup | Manual run of the hosted demo, nothing installed, 2026-11-15 | Pass |
 | Load First Flight, The Long Walk, Last Flock Standing | `e2e/objective-editor.spec.ts` "loads … and hands it to playtest" | Pass |
 | Resize the board without corrupting setup | `e2e/board.spec.ts` | Pass |
 | Add a fairy piece from the visual library | `e2e/piece-library.spec.ts` "finds Chancellor by its Empress alias…" | Pass |
-| Add a standard piece from the library | Manual on the hosted preview: added Bishop, it appeared in "Palette piece", and it was placed on the board | Pass |
+| Add a standard piece from the library | Manual on the hosted demo: added Bishop, it appeared in "Palette piece", and it was placed on the board | Pass |
 | Search by alias and inspect a movement diagram | `e2e/piece-library.spec.ts` "finds Chancellor by its Empress alias…" | Pass |
 | Create a movement visually | `e2e/piece-library.spec.ts` "creates a custom leaper visually…" | Pass |
 | Advanced vectors stay in sync | `e2e/piece-library.spec.ts` "keeps the vector editor in sync…" | Pass |
@@ -72,7 +72,7 @@ server. Manual rows are presentation checks.
 | Failed import keeps the current draft | `e2e/draft-portability.spec.ts` "a failed import explains…", "a valid JSON file that is not a variant…" | Pass |
 | Browser console stays clean | Every test using the `editor` fixture fails on a console or page error | Pass |
 | Health output | `e2e/smoke.spec.ts`, `verify:production` | Pass |
-| Server logs and network failures on the preview | Vercel build/runtime inspection of `dpl_GBRAYYo7DHGgL4shRcZ1GXHwh9Sr` after authenticated requests | Pass; build completed and no warning, error, or fatal runtime records were present |
+| Server logs and network failures on the hosted demo | Vercel build/runtime inspection of `dpl_GBRAYYo7DHGgL4shRcZ1GXHwh9Sr` after authenticated requests | Pass; build completed and no warning, error, or fatal runtime records were present |
 
 ## Accessibility and devices
 
@@ -89,7 +89,7 @@ server. Manual rows are presentation checks.
 | Reduced motion | `e2e/accessibility.spec.ts` "pieces move without animation…" | Pass |
 | No sideways scroll, desktop and narrow | `e2e/accessibility.spec.ts` "the page does not scroll sideways" | Pass |
 | Colour contrast | Browser-computed WCAG contrast regression check for the draft result and footer copy | Pass at 4.5:1 or higher |
-| Keyboard-only game on the hosted preview | Manual: The Long Walk played with the keyboard only, White wins | Pass |
+| Keyboard-only game on the hosted demo | Manual: The Long Walk played with the keyboard only, White wins | Pass |
 | Second browser | Firefox project in `playwright.config.ts`, 31 of 31 on Windows | Pass |
 
 ## Screenshots and recording
@@ -119,7 +119,7 @@ library, objective editing, refresh recovery).
 
 | Defect | Owner | Status |
 | --- | --- | --- |
-| Hosted preview served an older build than `main` (no autosave, export, or import controls). | Deployment (Vercel project owner) | Closed. The stable production deployment now tracks integrated `main`; Vercel reported Sprint 2 release-candidate commit `3ba6237` ready on 2026-11-23. |
+| Hosted demo served an older build than `main` (no autosave, export, or import controls). | Deployment (Vercel project owner) | Closed. The stable production deployment now tracks tagged release `sprint-2-demo` at `a4cc5f9`; Vercel reported it ready on 2026-11-23. |
 | A focused board square painted above the separate piece layer, visually hiding an occupied square's piece. | Board surface (shared component) | Closed in this pull request. The unnecessary focus stacking context was removed and is covered by the keyboard-focus browser test. |
 | Low colour contrast in the successful draft-check message and editor footer. | Variant editor styles | Closed in this pull request. Text colours were darkened and browser-computed WCAG AA checks now cover both surfaces. |
 

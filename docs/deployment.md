@@ -37,9 +37,9 @@ Run authoritative game sessions in a long-lived WebSocket-capable service rather
 
 Every required variable must be documented in `.env.example`. Browser-exposed values use the `NEXT_PUBLIC_` prefix; credentials never do. Production secrets belong in the hosting platform's secret store, not in the repository or container image.
 
-## Sprint 2 hosted preview (Vercel)
+## Sprint 2 production demo (Vercel)
 
-The Sprint 2 demo runs on a Vercel preview built from the repository with the
+The Sprint 2 demo runs as a Vercel production deployment from `main` with the
 default Next.js settings. No `vercel.json` is needed.
 
 Hosted link: <https://rookery-omega.vercel.app> (editor:
@@ -62,22 +62,23 @@ in the Vercel dashboard under Deployments.
 3. Node.js 22 is picked up from `engines.node` in `package.json`. Confirm the
    project setting shows 22.x.
 4. Environment variables: none are required for Sprint 2. `NEXT_PUBLIC_APP_URL`
-   only affects metadata links; set it to the preview origin if you want those
-   links to point at the preview.
-5. Every pull request gets a preview URL. The stable demo link is the preview
-   for the integrated `main` commit; record that URL and commit in
+   only affects metadata links; set it to the production origin when absolute
+   metadata URLs are added.
+5. Every pull request gets a protected preview URL. The stable demo link tracks
+   the production deployment from `main`; record its commit in
    `docs/sprint-2-verification.md`.
-6. Check the preview: `/api/health` returns `{"status":"ok","service":"rookery-web"}`,
+6. Check the deployment: `/api/health` returns `{"status":"ok","service":"rookery-web"}`,
    `/` and `/editor` load directly, and the editor responds to clicks.
 
-Do not register a domain or turn on production traffic for Sprint 2.
+The stable `vercel.app` deployment is the Sprint 2 production demo. A custom
+domain remains deferred.
 
-If the preview is down, use the local fallback in `docs/sprint-2-demo.md`.
+If the hosted demo is down, use the local fallback in `docs/sprint-2-demo.md`.
 
 ## Browser tests
 
-Browser tests use Playwright and always run against the local production
-server, never against a hosted preview:
+Browser tests use Playwright and run against the local production server by
+default:
 
 ```bash
 npm run build
@@ -91,8 +92,8 @@ Failures keep a screenshot, trace, and video in `test-results/`; CI uploads
 that folder and `playwright-report/` when the browser job fails. Both folders
 are ignored by Git.
 
-To point the same tests at a public hosted preview by hand (never in CI), set
-`ROOKERY_E2E_BASE_URL` to the preview origin before `npm run test:e2e`. No
+To point the same tests at a hosted deployment by hand (never in CI), set
+`ROOKERY_E2E_BASE_URL` to its origin before `npm run test:e2e`. No
 local server is started in that case. Project previews currently use Vercel
 Authentication, so an unauthenticated browser is expected to reach Vercel SSO
 instead of the application. Use Vercel's authenticated preview workflow for

@@ -5,12 +5,12 @@ and objectives without code, play it to a win, and keep the draft.
 
 ## Before the demo
 
-- Hosted preview: <https://rookery-omega.vercel.app/editor>. Nothing to install.
+- Hosted demo: <https://rookery-omega.vercel.app/editor>. Nothing to install.
 - Open <https://rookery-omega.vercel.app/api/health> and confirm
   `{"status":"ok","service":"rookery-web"}`.
 - Use a private window so no old draft is loaded.
 - Confirm the editor shows a **Your draft** section with Export JSON, Import
-  JSON, and Reset draft. If it does not, the preview is on an old build: use
+  JSON, and Reset draft. If it does not, the deployment is on an old build: use
   the local fallback.
 
 ## Local fallback
@@ -64,7 +64,7 @@ Then open <http://localhost:3000/editor>. The backup recording is
 
 | Problem | Do this |
 | --- | --- |
-| Preview does not load | Use the local fallback, or play the backup recording. |
+| Hosted demo does not load | Use the local fallback, or play the backup recording. |
 | "Your saved draft could not be restored" | Click **Reset saved draft**. |
 | Playtest button is disabled | Read the "Your draft" status; fix the listed issue (often a missing target). |
 | Wrong draft on screen | **Reset draft**, then load the showcase again. |
