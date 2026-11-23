@@ -2,8 +2,7 @@
 
 Task: S2-08 — Verify and deploy the hosted Sprint 2 demo.
 
-This report maps the Sprint 2 demo flow to evidence. Rows marked **Pending**
-have not been checked yet and say what they wait on. Nothing is marked Pass
+This report maps the Sprint 2 demo flow to evidence. Nothing is marked Pass
 without a recorded run.
 
 ## Build under test
@@ -14,6 +13,7 @@ without a recorded run.
 | Release candidate | Pull request #22 rebased onto `ecce9bf`; the committed evidence was recaptured from this candidate after the accessibility fixes below. |
 | Hosted preview URL | <https://rookery-omega.vercel.app> |
 | Production deployment commit | `ecce9bf`, reported **READY** by Vercel on 2026-11-23. The live editor shows Export JSON, Import JSON, and Reset draft. |
+| Candidate deployment | Vercel deployment `dpl_GBRAYYo7DHGgL4shRcZ1GXHwh9Sr` for application/evidence commit `fbc747e`, reported **READY**. Authenticated requests to `/api/health`, `/`, and `/editor` returned HTTP 200. |
 | CI run | Pass on the final pull request #22 candidate after rebasing onto `ecce9bf`. |
 | Clean environment | Fresh clone, `npm ci`, Node 22.23.4, npm 10.9.9, Ubuntu 24.04 |
 | Second environment | Windows, Node 22.15.0, `npm run build` and `npm run test:e2e` |
@@ -72,7 +72,7 @@ server. Manual rows are presentation checks.
 | Failed import keeps the current draft | `e2e/draft-portability.spec.ts` "a failed import explains…", "a valid JSON file that is not a variant…" | Pass |
 | Browser console stays clean | Every test using the `editor` fixture fails on a console or page error | Pass |
 | Health output | `e2e/smoke.spec.ts`, `verify:production` | Pass |
-| Server logs and network failures on the preview | Manual, Vercel dashboard | **Pending** |
+| Server logs and network failures on the preview | Vercel build/runtime inspection of `dpl_GBRAYYo7DHGgL4shRcZ1GXHwh9Sr` after authenticated requests | Pass; build completed and no warning, error, or fatal runtime records were present |
 
 ## Accessibility and devices
 

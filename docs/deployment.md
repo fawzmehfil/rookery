@@ -90,9 +90,12 @@ Failures keep a screenshot, trace, and video in `test-results/`; CI uploads
 that folder and `playwright-report/` when the browser job fails. Both folders
 are ignored by Git.
 
-To point the same tests at the hosted preview by hand (never in CI), set
+To point the same tests at a public hosted preview by hand (never in CI), set
 `ROOKERY_E2E_BASE_URL` to the preview origin before `npm run test:e2e`. No
-local server is started in that case.
+local server is started in that case. Project previews currently use Vercel
+Authentication, so an unauthenticated browser is expected to reach Vercel SSO
+instead of the application. Use Vercel's authenticated preview workflow for
+those URLs; do not disable deployment protection merely to run the suite.
 
 Screenshots and the backup recording are optional evidence, separate from the
 release-gate tests:
