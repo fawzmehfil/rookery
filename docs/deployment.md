@@ -50,7 +50,8 @@ Hosted link: <https://rookery-omega.vercel.app> (editor:
 Checked on 2026-11-23: `/api/health` returned
 `{"status":"ok","service":"rookery-web"}`, and `/` and `/editor` loaded
 directly with the three showcases and the objective editor. Vercel reported the
-production deployment from integrated `main` commit `ecce9bf` as **READY**.
+production deployment from Sprint 2 release-candidate commit `3ba6237` as
+**READY**.
 The live editor shows the "Your draft" controls. The deployed commit is listed
 in the Vercel dashboard under Deployments.
 

@@ -42,18 +42,21 @@ npm ci
 npm run dev
 ```
 
-The environment copy is optional for the local Sprint 1 build; it records the
-public origin used by future hosted environments.
+The environment copy is optional for local development; it records the public
+origin used by hosted environments.
 
 Open [http://localhost:3000](http://localhost:3000). The health endpoint is available at [http://localhost:3000/api/health](http://localhost:3000/api/health).
 
 The no-code variant editor is at [http://localhost:3000/editor](http://localhost:3000/editor).
 Start with First Flight, resize the board, place pieces, and configure movement
-rules. A valid draft opens directly in a deterministic local playtest. Drafts
-stay in the current tab and are intentionally reset by a page refresh or process
-restart. See the [Sprint 1 demo checklist](docs/sprint-1-demo.md),
-[editor interactions](docs/variant-editor.md), [playtest integration](docs/local-playtest.md),
-and [semantic validation](docs/variant-validation.md).
+rules and objectives. Valid drafts open directly in a deterministic local
+playtest. The active draft autosaves in the current browser, survives refreshes,
+and can be exported or imported as versioned JSON. See the
+[Sprint 2 demo checklist](docs/sprint-2-demo.md),
+[editor interactions](docs/variant-editor.md),
+[draft portability](docs/sprint-2-draft-portability.md),
+[playtest integration](docs/local-playtest.md), and
+[semantic validation](docs/variant-validation.md).
 
 Useful commands:
 
@@ -110,14 +113,17 @@ No database or external service is required for this foundation. Future required
 
 ## Current delivery and next milestones
 
-Sprint 1 delivers versioned variant data, structural parsing, semantic validation,
-deterministic legal actions/transitions, an accessible no-code editor, and local
-playtesting with First Flight. Known rule and persistence limits are recorded in
-the [Sprint 1 verification report](docs/sprint-1-verification.md).
+Sprint 2 delivers versioned variant data, structural and semantic validation,
+deterministic legal actions and outcomes, a visual piece library and movement
+designer, three configurable victory conditions, three showcase variants,
+browser-local autosave, versioned JSON portability, and immediate playtesting.
+The hosted demo is available at <https://rookery-omega.vercel.app>; the verified
+scope and known limits are recorded in the
+[Sprint 2 verification report](docs/sprint-2-verification.md).
 
-1. Add durable drafts, JSON import, accounts, variants, and immutable published versions.
+1. Add accounts, server-backed drafts, variants, and immutable published versions.
 2. Add remix lineage, share pages, moderation basics, and community discovery.
 3. Introduce authoritative multiplayer, reconnects, clocks, and game history.
-4. Expand the rules language with reviewed abilities, modifiers, and objectives.
+4. Expand the rules language with reviewed abilities, modifiers, and advanced mechanics.
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a change.
