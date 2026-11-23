@@ -274,4 +274,37 @@ describe("rejected inputs", () => {
     expect(result.issues.map(({ code }) => code)).toEqual(expect.arrayContaining(["DUPLICATE_PIECE_ID", "OVERLAPPING_PIECES", "INVALID_ROYAL_COUNT"]));
     expect(result.issues.every(({ severity }) => severity === "error")).toBe(true);
   });
+
+  it("rejects imported reach-target definitions with conflicting ownership and duplicate cells", () => {
+    const objective = longWalkVariant.objectives[0];
+    if (objective.type !== "reach-target") throw new Error("Expected reach-target fixture");
+    const broken: VariantDefinition = {
+      ...longWalkVariant,
+      schemaVersion: 2,
+      objectives: [{
+        ...objective,
+        targets: [
+          objective.targets[0]!,
+          {
+            ...objective.targets[1]!,
+            playerId: objective.targets[0]!.playerId,
+            cells: [
+              { ...objective.targets[1]!.cells[0]! },
+              { ...objective.targets[1]!.cells[0]! },
+            ],
+          },
+        ],
+      }],
+    };
+
+    const result = importText(JSON.stringify(broken));
+
+    expect(result).toMatchObject({ ok: false, code: "VARIANT_INVALID" });
+    if (result.ok) return;
+    expect(result.issues.map(({ code }) => code)).toEqual([
+      "DUPLICATE_TARGET_PLAYER",
+      "DUPLICATE_TARGET_CELL",
+      "NO_TARGET",
+    ]);
+  });
 });

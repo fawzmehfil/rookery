@@ -1,4 +1,4 @@
-# Semantic validation and engine quality (Sprint 1 Task 04)
+# Semantic validation and engine quality
 
 ## Consumer boundary
 
@@ -16,9 +16,9 @@ Input is ordinary serialized data, never executable user rules.
 
 Schema version 1 accepts only capture-the-royal. Version 2 also accepts
 reach-target and eliminate-all definitions. Parsing never silently upgrades
-version 1 data. Sprint 2 Task S2-03 adds the objective-specific semantic rules
-for the new definitions; until then, the existing royal-count and capture-edge
-checks run only for capture-the-royal so new objectives are not misdiagnosed.
+version 1 data. Objective-specific semantic rules are centralized in the shared
+validator; the objective editor projects the relevant shared issues instead of
+maintaining a second validation implementation.
 
 Semantic errors accumulate deterministically: duplicate player/type/piece IDs;
 turn-order duplicates, unknown players and missing players; disabled cells in
@@ -46,6 +46,17 @@ are appended last. IDs are unique within their own namespace, not globally.
 | OVERLAPPING_PIECES | setup[index].at | error |
 | INVALID_ROYAL_COUNT | players[index] | error |
 | NO_CAPTURE_MOVEMENT | players[index] | error |
+| NO_TARGET | players[index] | error |
+| UNKNOWN_TARGET_PLAYER | objectives[0].targets[index].playerId | error |
+| DUPLICATE_TARGET_PLAYER | objectives[0].targets[index].playerId | error |
+| TARGET_OUT_OF_BOUNDS | objectives[0].targets[index].cells[index] | error |
+| TARGET_DISABLED | objectives[0].targets[index].cells[index] | error |
+| DUPLICATE_TARGET_CELL | objectives[0].targets[index].cells[index] | error |
+| UNKNOWN_ELIGIBLE_PIECE_TYPE | objectives[0].targets[index].eligiblePieceTypeIds[index] | error |
+| DUPLICATE_ELIGIBLE_PIECE_TYPE_ID | objectives[0].targets[index].eligiblePieceTypeIds[index] | error |
+| NO_ELIGIBLE_PIECES | objectives[0].targets[index] | error |
+| PIECE_INITIALIZED_ON_TARGET | setup[index].at | error |
+| NO_INITIAL_PIECES | players[index] | error |
 | NO_INITIAL_ACTIONS | turnOrder[0] | error |
 | UNUSED_PIECE_TYPE | pieceTypes[index] | warning |
 
@@ -56,19 +67,18 @@ Use Node 22 and npm 10+. From the repository root:
 ```powershell
 npm.cmd run check
 $env:ROOKERY_PERF = '1'
-npm.cmd exec --workspace @rookery/rules -- vitest run src/legal-actions.performance.test.ts --reporter=verbose --disableConsoleIntercept
+npm.cmd exec --workspace @rookery/rules -- vitest run src/legal-actions.performance.test.ts src/validate-variant.performance.test.ts --reporter=verbose --disableConsoleIntercept
 Remove-Item Env:ROOKERY_PERF
 npm.cmd audit
 git diff --check
 ```
 
-No property-testing dependency is added. The suite uses deterministic tables and
-the canonical nine-action First Flight replay, so it needs no random seed.
-Performance is opt-in to avoid timing-sensitive ordinary CI. The fixed fixture
-is First Flight's six pieces on a 26x26 board; 100 warm-up calls precede nine
-samples of 100 calls each. The median per-call duration must be at most 100ms.
-This establishes PoC latency for this fixture, not a worst-case guarantee for
-every user-authored variant.
+No property-testing dependency is added. The suite uses exhaustive deterministic
+target-cell combinations, adversarial imports, and the canonical First Flight
+replay, so it needs no random seed. Performance is opt-in to avoid timing-sensitive
+ordinary CI. The legal-action fixture uses First Flight on a 26x26 board. The
+validator fixture uses all 128 piece types and all 676 board cells with disjoint
+per-player targets. Both require a median per-call duration of at most 100ms.
 
 ## Recorded verification
 
@@ -77,6 +87,8 @@ every user-authored variant.
 - Ordinary rules suite: 87 passing tests; one opt-in performance test skipped.
 - Opt-in rules suite: 88 passing tests. Recorded median 0.008352ms/call before the final validator-only refinement.
 - First Flight parses, validates with `[]`, and round trips through JSON.
+- On Node 22.22.2 and Apple M2, the maximum reach-target validator fixture
+  recorded a 3.49ms median per call; legal-action generation recorded 0.009ms.
 - `npm audit`: 16 moderate development-toolchain findings from existing
   minimatch dependencies. No production dependency findings. Not fixed with
   `--force`: npm proposes a breaking ESLint downgrade. Audit is an outstanding

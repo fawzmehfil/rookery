@@ -2,7 +2,7 @@ import {
   movementPatternSchema, parseVariantDefinition, validateVariantDefinition,
   type Coordinate, type MovementPattern, type VariantDefinition,
 } from "@rookery/rules";
-import { isTarget, objectiveIssues, targetResizeError } from "@/features/objective-editor/model";
+import { isTarget, targetResizeError } from "@/features/objective-editor/model";
 import { duplicateMovement } from "@/features/piece-library/model";
 
 export type EditorIssue = Readonly<{
@@ -14,13 +14,12 @@ export type EditorIssue = Readonly<{
 
 /**
  * The single editor validity gate shared by the issue list, playtest handoff,
- * autosave, recovery, and import. When S2-03 moves objective and duplicate
- * pattern rules into validateVariantDefinition, remove the supplements here.
+ * autosave, recovery, and import. Duplicate movement detection remains an
+ * editor supplement until the public movement schema owns that constraint.
  */
 export function draftIssues(v: VariantDefinition): readonly EditorIssue[] {
   return [
     ...validateVariantDefinition(v),
-    ...objectiveIssues(v),
     ...v.pieceTypes.flatMap((type, index) => {
       const message = duplicateMovement(type);
       return message ? [{ code: "SCHEMA_INVALID", severity: "error" as const, path: ["pieceTypes", index, "movements"], message }] : [];
