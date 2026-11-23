@@ -47,12 +47,12 @@ Hosted link: <https://rookery-omega.vercel.app> (editor:
 <https://rookery-omega.vercel.app/api/health>). It is the project's default
 `vercel.app` address, not a custom domain.
 
-Checked on 2026-11-15: `/api/health` returned
+Checked on 2026-11-23: `/api/health` returned
 `{"status":"ok","service":"rookery-web"}`, and `/` and `/editor` loaded
-directly with the three showcases and the objective editor. The preview was
-redeployed from `main` commit `803b4ac` later that day, and the live editor
-shows the "Your draft" controls. The deployed commit is listed in the Vercel
-dashboard under Deployments.
+directly with the three showcases and the objective editor. Vercel reported the
+production deployment from integrated `main` commit `ecce9bf` as **READY**.
+The live editor shows the "Your draft" controls. The deployed commit is listed
+in the Vercel dashboard under Deployments.
 
 1. In Vercel, import `fawzmehfil/rookery` (a repository owner may need to
    approve the Vercel GitHub app).

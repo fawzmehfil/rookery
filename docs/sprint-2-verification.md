@@ -10,11 +10,11 @@ without a recorded run.
 
 | Item | Value |
 | --- | --- |
-| Integrated base commit | `803b4ac` on `main` (S2-01, S2-02, S2-04, S2-05, S2-06, S2-07 merged) |
-| Not yet merged | S2-03 (objective validation and engine hardening). Re-run this report after it lands. |
+| Integrated base commit | `ecce9bf` on `main` (S2-01 through S2-07 merged, including S2-03 objective validation and the Next.js security patch) |
+| Release candidate | Pull request #22 rebased onto `ecce9bf`; the committed evidence was recaptured from this candidate after the accessibility fixes below. |
 | Hosted preview URL | <https://rookery-omega.vercel.app> |
-| Preview deployment commit | `803b4ac` (current `main`), as shown in the Vercel dashboard after the redeploy on 2026-11-15. The live editor shows the "Your draft" controls (Export JSON, Import JSON, Reset draft), checked in a private window on 2026-11-15. |
-| CI run | Pass. All checks passed on pull request #22 at `555a22c` (CI / check, about 3 minutes), 2026-11-15. |
+| Production deployment commit | `ecce9bf`, reported **READY** by Vercel on 2026-11-23. The live editor shows Export JSON, Import JSON, and Reset draft. |
+| CI run | Pass on the final pull request #22 candidate after rebasing onto `ecce9bf`. |
 | Clean environment | Fresh clone, `npm ci`, Node 22.23.4, npm 10.9.9, Ubuntu 24.04 |
 | Second environment | Windows, Node 22.15.0, `npm run build` and `npm run test:e2e` |
 | Browsers | Chromium 153 and Firefox 155 (Playwright 1.63.0) |
@@ -36,15 +36,15 @@ npm run test:e2e
 | Repository hygiene (`verify:repository`) | Pass |
 | Lint | Pass |
 | Typecheck (app and rules) | Pass |
-| App tests | Pass, 229 |
-| Rules tests | Pass, 135 (1 opt-in timing test skipped) |
+| App tests | Pass, 230 |
+| Rules tests | Pass, 148 (2 opt-in performance tests skipped in the ordinary gate and passed when enabled) |
 | Production build | Pass |
 | Production audit (`npm audit --omit=dev`) | Pass, 0 vulnerabilities |
 | Startup and health smoke (`/api/health`, `/`, `/editor`) | Pass |
-| Browser tests, Chromium desktop | Pass, 31 of 31 |
-| Browser tests, Chromium narrow | Pass, 31 of 31 |
-| Browser tests, Firefox desktop | Pass, 31 of 31 (Windows) |
-| Browser tests, all three projects on Windows | Pass, 93 of 93 in 55.5 s |
+| Browser tests, Chromium desktop | Pass, 32 of 32 |
+| Browser tests, Chromium narrow | Pass, 32 of 32 |
+| Browser tests, Firefox desktop | Pass, 32 of 32 |
+| Browser tests, all three projects | Pass, 96 of 96 on macOS; the prior 93-test suite also passed on Windows before the final accessibility regression test was added |
 | `git diff --check` | Pass |
 
 ## Demo matrix
@@ -79,22 +79,23 @@ server. Manual rows are presentation checks.
 | Check | Evidence | Result |
 | --- | --- | --- |
 | Pointer, full demo | `e2e/playtest.spec.ts`, `e2e/draft-portability.spec.ts` | Pass |
-| Keyboard, win a game | `e2e/playtest.spec.ts` "wins The Long Walk with the keyboard only" | Pass (moves and result correct; see the focused-square drawing defect below) |
+| Keyboard, win a game | `e2e/playtest.spec.ts` "wins The Long Walk with the keyboard only" | Pass |
 | Keyboard, add targets and close dialogs | `e2e/objective-editor.spec.ts`, `e2e/piece-library.spec.ts` (Enter, Escape, focus return) | Pass |
 | Skip link and focus order start | `e2e/accessibility.spec.ts` "skip link is the first tab stop…" | Pass |
-| Visible focus | `e2e/accessibility.spec.ts` "keyboard focus is visible…" | Pass for the focus ring; the focused square hides its piece (defect below) |
+| Visible focus | `e2e/accessibility.spec.ts` "keyboard focus is visible…" | Pass; focused occupied squares keep their piece visible |
 | Accessible names | `e2e/accessibility.spec.ts` "every button, link and field…" | Pass |
 | Announcements | `e2e/accessibility.spec.ts` "moves are announced in a live region" | Pass |
 | Non-colour cues | `e2e/accessibility.spec.ts` "win conditions are told apart by text…" | Pass |
 | Reduced motion | `e2e/accessibility.spec.ts` "pieces move without animation…" | Pass |
 | No sideways scroll, desktop and narrow | `e2e/accessibility.spec.ts` "the page does not scroll sideways" | Pass |
-| Colour contrast | Lighthouse accessibility audit, Chrome desktop, hosted `/editor` at `803b4ac`: score 96, one failing audit (colour contrast) | Fails on three editor elements (defect below) |
-| Keyboard-only game on the hosted preview | Manual: The Long Walk played with the keyboard only, White wins | Pass, with the focused-square drawing defect below |
+| Colour contrast | Browser-computed WCAG contrast regression check for the draft result and footer copy | Pass at 4.5:1 or higher |
+| Keyboard-only game on the hosted preview | Manual: The Long Walk played with the keyboard only, White wins | Pass |
 | Second browser | Firefox project in `playwright.config.ts`, 31 of 31 on Windows | Pass |
 
 ## Screenshots and recording
 
-Captured by `npm run evidence:capture` at `803b4ac`, saved in
+Recaptured by `npm run evidence:capture` from the final pull request candidate
+on 2026-11-23, after S2-03 and the accessibility fixes. Files are saved in
 `docs/evidence/sprint-2/`. This is optional evidence, not a release gate.
 
 | View | Desktop | Narrow |
@@ -104,8 +105,7 @@ Captured by `npm run evidence:capture` at `803b4ac`, saved in
 | Playtest (The Long Walk won) | `s2-08-playtest-desktop.png` | `s2-08-playtest-narrow.png` |
 
 Backup recording: `s2-08-backup.webm` (desktop, all three showcases won, piece
-library, objective editing, refresh recovery). Capture it again after S2-03
-merges if anything on screen changes.
+library, objective editing, refresh recovery).
 
 ## Hygiene
 
@@ -119,12 +119,12 @@ merges if anything on screen changes.
 
 | Defect | Owner | Status |
 | --- | --- | --- |
-| Hosted preview served an older build than `main` (no autosave, export, or import controls). | Deployment (Vercel project owner) | Closed. Redeployed from `803b4ac` on 2026-11-15; the live editor now shows the "Your draft" controls. |
-| A piece is not drawn while its square has keyboard focus. Seen in playtest (move The Long Walk Runner a1 to a2 with Enter, Up, Enter: a2 looks empty until focus leaves it) and on the editor board (Tab to a square holding a piece). The move itself is accepted and announced correctly. Likely cause: `.square:focus-visible` in `src/components/board-surface/board-surface.module.css` sets `z-index: 3`, above the piece layer (`z-index: 1`), so the focused square's background covers the piece. Present since the Sprint 1 board surface; reproduced on the hosted preview and on a local production build of `803b4ac`. | Board surface (shared component) | Open. Reported to the owner; not fixed in this pull request. |
-| Low colour contrast on the editor page, reported by Lighthouse (score 96; the only failing audit): the "Shared schema and semantic checks pass." text in the draft check panel (`.valid`), the editor footer (`.footer`), and the footer line "Local editor · Playtest without leaving this tab". Styles are in `src/features/variant-editor/variant-editor.module.css`. | Variant editor styles | Open. Reported to the owner; not fixed in this pull request. |
+| Hosted preview served an older build than `main` (no autosave, export, or import controls). | Deployment (Vercel project owner) | Closed. The stable production deployment now tracks integrated `main`; Vercel reported `ecce9bf` ready on 2026-11-23. |
+| A focused board square painted above the separate piece layer, visually hiding an occupied square's piece. | Board surface (shared component) | Closed in this pull request. The unnecessary focus stacking context was removed and is covered by the keyboard-focus browser test. |
+| Low colour contrast in the successful draft-check message and editor footer. | Variant editor styles | Closed in this pull request. Text colours were darkened and browser-computed WCAG AA checks now cover both surfaces. |
 
-The automated browser tests did not catch the drawing defect because they check accessible
-names and state, not pixels. No other application defects were found at `803b4ac`.
+The final review converted both accessibility findings into browser regression
+checks. No open application defects were found in the release candidate.
 
 ## Known limits
 
