@@ -1,4 +1,13 @@
-import { coordinateToSquare, coordinateSchema, type Coordinate, type ObjectiveDefinition, type ReachTargetPlayerTargets, type VariantDefinition } from "@rookery/rules";
+import {
+  coordinateToSquare,
+  coordinateSchema,
+  validateVariantDefinition,
+  type Coordinate,
+  type ObjectiveDefinition,
+  type ReachTargetPlayerTargets,
+  type ValidationIssue,
+  type VariantDefinition,
+} from "@rookery/rules";
 import { firstFlightVariant, longWalkVariant, lastFlockStandingVariant } from "@rookery/rules/fixtures";
 
 export const objectiveChoices = [
@@ -44,25 +53,12 @@ export function targetResizeError(v:VariantDefinition,files:number,ranks:number)
   return affected.length ? `Move or remove target ${affected.map(formatCell).join(", ")} in Objective settings before shrinking the board.`:null;
 }
 export function isTarget(v:VariantDefinition,at:Coordinate) { const o=v.objectives[0];return o?.type==="reach-target" && o.targets.some(t=>t.cells.some(c=>sameCell(c,at))); }
-export type ObjectiveIssue={code:string;severity:"error";message:string;path:readonly(string|number)[]};
-/** Editor diagnostics supplement the public validator until S2-02 owns the same
- * semantic rules. These never change the public objective format or evaluate wins. */
-export function objectiveIssues(v:VariantDefinition):ObjectiveIssue[] {
-  const issues:ObjectiveIssue[]=[];const o=v.objectives[0];if(!o) return issues;
-  const add=(code:string,path:readonly(string|number)[],message:string)=>issues.push({code,severity:"error",path,message});
-  if(o.type==="eliminate-all") v.players.forEach((p,i)=>{if(!v.setup.some(piece=>piece.ownerId===p.id)) add("EDITOR_NO_STARTING_PIECES",["players",i],`Place at least one piece for ${p.name} before starting elimination.`);});
-  if(o.type!=="reach-target") return issues;
-  v.players.forEach(p=>{if(!o.targets.some(t=>t.playerId===p.id)) add("EDITOR_MISSING_PLAYER_TARGETS",["objectives",0,"targets"],`Configure at least one target for ${p.name}.`);});
-  const owners=new Set<string>();
-  o.targets.forEach((t,i)=>{
-    const base=["objectives",0,"targets",i];const player=v.players.find(p=>p.id===t.playerId);
-    if(!player) add("EDITOR_UNKNOWN_TARGET_PLAYER",[...base,"playerId"],"Choose a defined player for these targets, or remove this configuration.");
-    if(owners.has(t.playerId)) add("EDITOR_DUPLICATE_TARGET_PLAYER",[...base,"playerId"],"Each player must have one target configuration.");owners.add(t.playerId);
-    if(!t.cells.length) add("EDITOR_MISSING_TARGET",[...base,"cells"],`Add a target for ${player?.name??t.playerId}.`);
-    const seen=new Set<string>();
-    t.cells.forEach((at,j)=>{const key=`${at.file},${at.rank}`;const error=targetCellError(v,at);if(error)add("EDITOR_INVALID_TARGET",[...base,"cells",j],`${formatCell(at)}: ${error}`);if(seen.has(key))add("EDITOR_DUPLICATE_TARGET",[...base,"cells",j],`Remove duplicate target ${formatCell(at)}.`);seen.add(key);});
-    if(t.eligiblePieceTypeIds?.length===0) add("EDITOR_EMPTY_ELIGIBLE_TYPES",[...base,"eligiblePieceTypeIds"],"Choose at least one eligible type, or allow any piece.");
-    const eligible=new Set<string>();t.eligiblePieceTypeIds?.forEach((id,j)=>{if(!v.pieceTypes.some(type=>type.id===id))add("EDITOR_UNKNOWN_ELIGIBLE_TYPE",[...base,"eligiblePieceTypeIds",j],`Remove unknown piece type ${id}.`);if(eligible.has(id))add("EDITOR_DUPLICATE_ELIGIBLE_TYPE",[...base,"eligiblePieceTypeIds",j],`Remove duplicate eligible type ${id}.`);eligible.add(id);});
-    if(player && !v.setup.some(piece=>piece.ownerId===player.id && v.pieceTypes.some(type=>type.id===piece.typeId) && (!t.eligiblePieceTypeIds || t.eligiblePieceTypeIds.includes(piece.typeId)))) add("EDITOR_MISSING_ELIGIBLE_PIECE",[...base,"eligiblePieceTypeIds"],`Place an eligible piece for ${player.name}, or change the allowed types.`);
-  });return issues;
+const objectivePlayerCodes = new Set(["NO_TARGET", "NO_INITIAL_PIECES", "PIECE_INITIALIZED_ON_TARGET"]);
+
+/** Objective-panel projection of the shared validator; the editor does not
+ * maintain a second set of objective semantics. */
+export function objectiveIssues(v: VariantDefinition): ValidationIssue[] {
+  return validateVariantDefinition(v).filter(
+    (issue) => issue.path[0] === "objectives" || objectivePlayerCodes.has(issue.code),
+  );
 }

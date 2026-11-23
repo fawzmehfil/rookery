@@ -35,20 +35,20 @@ it("rejects resize and disabling targets before modifying domain data",()=>{
   expect(longWalkVariant.board.ranks).toBe(3);expect(longWalkVariant.board.disabledCells).toEqual([]);
 });
 it.each([
-  ["EDITOR_MISSING_TARGET",{playerId:"white",cells:[]}],
-  ["EDITOR_INVALID_TARGET",{playerId:"white",cells:[{file:8,rank:0}]}],
-  ["EDITOR_DUPLICATE_TARGET",{playerId:"white",cells:[{file:0,rank:2},{file:0,rank:2}]}],
-  ["EDITOR_UNKNOWN_ELIGIBLE_TYPE",{playerId:"white",cells:[{file:0,rank:2}],eligiblePieceTypeIds:["unknown"]}],
-  ["EDITOR_EMPTY_ELIGIBLE_TYPES",{playerId:"white",cells:[{file:0,rank:2}],eligiblePieceTypeIds:[]}],
-  ["EDITOR_MISSING_ELIGIBLE_PIECE",{playerId:"white",cells:[{file:0,rank:2}],eligiblePieceTypeIds:["unknown"]}],
+  ["SCHEMA_INVALID",{playerId:"white",cells:[]}],
+  ["TARGET_OUT_OF_BOUNDS",{playerId:"white",cells:[{file:8,rank:0}]}],
+  ["DUPLICATE_TARGET_CELL",{playerId:"white",cells:[{file:0,rank:2},{file:0,rank:2}]}],
+  ["UNKNOWN_ELIGIBLE_PIECE_TYPE",{playerId:"white",cells:[{file:0,rank:2}],eligiblePieceTypeIds:["unknown"]}],
+  ["SCHEMA_INVALID",{playerId:"white",cells:[{file:0,rank:2}],eligiblePieceTypeIds:[]}],
+  ["NO_ELIGIBLE_PIECES",{playerId:"white",cells:[{file:0,rank:2}],eligiblePieceTypeIds:["unknown"]}],
 ] as const)("reports %s with a specific objective path and blocks handoff",(code,target)=>{
   const changed=updatePlayerTargets(longWalkVariant,target);expect(objectiveIssues(changed)).toContainEqual(expect.objectContaining({code,path:expect.arrayContaining(["objectives",0,"targets",0])}));expect(playtestDraft(changed)).toBeNull();
 });
 it("reports disabled cells, unknown players, duplicate owners and empty elimination sides",()=>{
   const disabled={...longWalkVariant,board:{...longWalkVariant.board,disabledCells:[{file:0,rank:2}]}};
-  expect(objectiveIssues(disabled).some(i=>i.message.includes("Enable"))).toBe(true);
+  expect(objectiveIssues(disabled).map(i=>i.code)).toContain("TARGET_DISABLED");
   const o=longWalkVariant.objectives[0];if(o.type!=="reach-target")throw new Error("wrong fixture");
-  expect(objectiveIssues(setObjective(longWalkVariant,{...o,targets:[{...o.targets[0],playerId:"missing"},o.targets[1]]})).map(i=>i.code)).toContain("EDITOR_UNKNOWN_TARGET_PLAYER");
-  expect(objectiveIssues(setObjective(longWalkVariant,{...o,targets:[o.targets[0],o.targets[0]]})).map(i=>i.code)).toContain("EDITOR_DUPLICATE_TARGET_PLAYER");
-  expect(objectiveIssues({...lastFlockStandingVariant,setup:lastFlockStandingVariant.setup.filter(p=>p.ownerId==="white")})).toContainEqual(expect.objectContaining({code:"EDITOR_NO_STARTING_PIECES",path:["players",1]}));
+  expect(objectiveIssues(setObjective(longWalkVariant,{...o,targets:[{...o.targets[0],playerId:"missing"},o.targets[1]]})).map(i=>i.code)).toContain("UNKNOWN_TARGET_PLAYER");
+  expect(objectiveIssues(setObjective(longWalkVariant,{...o,targets:[o.targets[0],o.targets[0]]})).map(i=>i.code)).toContain("DUPLICATE_TARGET_PLAYER");
+  expect(objectiveIssues({...lastFlockStandingVariant,setup:lastFlockStandingVariant.setup.filter(p=>p.ownerId==="white")})).toContainEqual(expect.objectContaining({code:"NO_INITIAL_PIECES",path:["players",1]}));
 });

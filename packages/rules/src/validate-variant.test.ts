@@ -137,7 +137,9 @@ describe("semantic validation", () => {
     ["TARGET_OUT_OF_BOUNDS", v => {v.objectives[0].targets[0].cells[0] = { file: 6, rank: 0 };}, ["objectives", 0, "targets", 0, "cells", 0]],
     ["TARGET_DISABLED", v => {const cell = v.objectives[0].targets[0].cells[0];v.board.disabledCells.push({ ...cell });}, ["objectives", 0, "targets", 0, "cells", 0]],
     ["DUPLICATE_TARGET_CELL", v => {const cell = v.objectives[0].targets[0].cells[0];v.objectives[0].targets[0].cells.push({ ...cell });}, ["objectives", 0, "targets", 0, "cells", 1]],
-    ["UNASSIGNED_TARGET", v => {v.objectives[0].targets[0].playerId = "unknown";}, ["objectives", 0, "targets", 0, "playerId"]],
+    ["DUPLICATE_TARGET_CELL", v => {v.objectives[0].targets[1].cells[0] = { ...v.objectives[0].targets[0].cells[0] };}, ["objectives", 0, "targets", 1, "cells", 0]],
+    ["UNKNOWN_TARGET_PLAYER", v => {v.objectives[0].targets[0].playerId = "unknown";}, ["objectives", 0, "targets", 0, "playerId"]],
+    ["DUPLICATE_TARGET_PLAYER", v => {v.objectives[0].targets[1].playerId = v.objectives[0].targets[0].playerId;}, ["objectives", 0, "targets", 1, "playerId"]],
     ["NO_TARGET", v => {v.objectives[0].targets[1].playerId = v.objectives[0].targets[0].playerId;}, ["players", 1]],
     ["UNKNOWN_ELIGIBLE_PIECE_TYPE", v => {v.objectives[0].targets[0].eligiblePieceTypeIds = ["unknown"];}, ["objectives", 0, "targets", 0, "eligiblePieceTypeIds", 0]],
     ["DUPLICATE_ELIGIBLE_PIECE_TYPE_ID", v => {const typeId = v.pieceTypes[0].id; v.objectives[0].targets[0].eligiblePieceTypeIds = [typeId, typeId];}, ["objectives", 0, "targets", 0, "eligiblePieceTypeIds", 1]],
@@ -157,6 +159,46 @@ describe("semantic validation", () => {
     v.setup = v.setup.filter((piece: { ownerId: string }) => piece.ownerId !== secondPlayer);
     const issues = validateVariantDefinition(v);
     expect(issues).toContainEqual({code: "NO_INITIAL_PIECES", path: ["players", 1], severity: "error", message: expect.any(String),});
+  });
+
+  it("reports independent reach-target issues deterministically without modifying the draft", () => {
+    const v = reachTargetDraft();
+    v.objectives[0].targets[1].playerId = v.objectives[0].targets[0].playerId;
+    v.objectives[0].targets[1].cells[0] = { ...v.objectives[0].targets[0].cells[0] };
+    const typeId = v.pieceTypes[0].id;
+    v.objectives[0].targets[1].eligiblePieceTypeIds = [typeId, typeId];
+    const before = JSON.stringify(v);
+
+    const first = validateVariantDefinition(v);
+    const second = validateVariantDefinition(v);
+
+    expect(second).toEqual(first);
+    expect(JSON.stringify(v)).toBe(before);
+    expect(first.map(({ code }) => code)).toEqual([
+      "DUPLICATE_TARGET_PLAYER",
+      "DUPLICATE_TARGET_CELL",
+      "DUPLICATE_ELIGIBLE_PIECE_TYPE_ID",
+      "NO_TARGET",
+    ]);
+  });
+
+  it("accepts every distinct pair of empty target cells on the canonical board", () => {
+    const base = reachTargetDraft();
+    const emptyCells = Array.from({ length: base.board.files * base.board.ranks }, (_, index) => ({
+      file: index % base.board.files,
+      rank: Math.floor(index / base.board.files),
+    })).filter((cell) => !base.setup.some((piece: { at: { file: number; rank: number } }) =>
+      piece.at.file === cell.file && piece.at.rank === cell.rank));
+
+    for (const whiteTarget of emptyCells) {
+      for (const blackTarget of emptyCells) {
+        if (whiteTarget.file === blackTarget.file && whiteTarget.rank === blackTarget.rank) continue;
+        const candidate = structuredClone(base);
+        candidate.objectives[0].targets[0].cells = [whiteTarget];
+        candidate.objectives[0].targets[1].cells = [blackTarget];
+        expect(validateVariantDefinition(candidate)).toEqual([]);
+      }
+    }
   });
 
 });
