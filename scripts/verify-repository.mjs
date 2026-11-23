@@ -8,7 +8,7 @@ const tracked = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" })
 const forbiddenPaths = [
   /(^|\/)\.DS_Store$/,
   /(^|\/)\.env(?!\.example$)/,
-  /(^|\/)(node_modules|\.next|out|coverage|playwright-report)(\/|$)/,
+  /(^|\/)(node_modules|\.next|out|coverage|playwright-report|test-results|blob-report)(\/|$)/,
   /(^|\/)(build|dist)(\/|$)/,
 ];
 const forbiddenTracked = tracked.filter((path) => forbiddenPaths.some((pattern) => pattern.test(path)));
