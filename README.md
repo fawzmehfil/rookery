@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/rookery.png" alt="Rookery" width="120" />
+<img src="src/app/icon.png" alt="Rookery" width="120" />
 
 <h1>Rookery</h1>
 

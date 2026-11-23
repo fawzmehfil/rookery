@@ -7,7 +7,7 @@ import { coordinateToSquare, squareToCoordinate, type Coordinate, type VariantDe
 import { firstFlightVariant } from "@rookery/rules/fixtures";
 import { BoardSurface } from "@/components/board-surface";
 import { variantBoardPieces } from "@/features/variant-board/board-adapter";
-import rookeryLogo from "../../../assets/rookery.png";
+import rookeryLogo from "../../app/icon.png";
 import { ObjectiveEditor } from "@/features/objective-editor/objective-editor";
 import { ShowcasePicker } from "@/features/objective-editor/showcase-picker";
 import { objectiveChoices, targetResizeError, toggleTarget } from "@/features/objective-editor/model";
