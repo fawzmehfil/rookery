@@ -39,6 +39,10 @@ test("keyboard focus is visible on controls and board squares", async ({ editor:
 
   const a1 = board(page).getByRole("button", { name: "a1, White Tower" });
   await a1.focus();
+  await expect(a1).toBeFocused();
+  // An inset ring does not need a stacking context. Keeping the square at the
+  // default layer prevents its background from covering the separate piece layer.
+  expect(await a1.evaluate((element) => getComputedStyle(element).zIndex)).toBe("auto");
   await page.keyboard.press("ArrowRight");
   const b1 = board(page).getByRole("button", { name: "b1", exact: true });
   await expect(b1).toBeFocused();
@@ -47,6 +51,32 @@ test("keyboard focus is visible on controls and board squares", async ({ editor:
     return (Number.parseFloat(style.outlineWidth) || 0) > 0 || style.boxShadow !== "none";
   });
   expect(ring).toBe(true);
+});
+
+test("validation and footer copy meet WCAG AA contrast", async ({ editor: page }) => {
+  const contrast = async (locator: ReturnType<typeof board>, background: readonly [number, number, number]) =>
+    locator.evaluate((element, backgroundRgb) => {
+      const rgb = getComputedStyle(element).color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+      if (!rgb || rgb.length !== 3) throw new Error("Expected an opaque RGB text colour");
+      const luminance = (channels: readonly number[]) => {
+        const linear = channels.map((channel) => {
+          const value = channel / 255;
+          return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
+      };
+      const foreground = luminance(rgb);
+      const backdrop = luminance(backgroundRgb);
+      return (Math.max(foreground, backdrop) + 0.05) / (Math.min(foreground, backdrop) + 0.05);
+    }, background);
+
+  const valid = page.getByText("Shared schema and semantic checks pass.");
+  await expect(valid).toBeVisible();
+  expect(await contrast(valid, [233, 241, 217])).toBeGreaterThanOrEqual(4.5);
+
+  const footer = page.locator("footer");
+  await expect(footer).toBeVisible();
+  expect(await contrast(footer, [255, 255, 255])).toBeGreaterThanOrEqual(4.5);
 });
 
 test("moves are announced in a live region", async ({ editor: page }) => {
