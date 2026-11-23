@@ -115,10 +115,10 @@ export function validateVariantDefinition(input: unknown): readonly ValidationIs
   }
   if (v.objectives[0]?.type === "reach-target") {
     const configuredPlayers = new Set<string>();
-    const configuredCells = new Set<string>();
 
     v.objectives[0].targets.forEach((target, i) => {
       const targetPath = ["objectives", 0, "targets", i] as const;
+      const configuredCells = new Set<string>();
 
       if (!players.has(target.playerId)) {
         add(

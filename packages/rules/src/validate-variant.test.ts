@@ -6,7 +6,7 @@ import type { ValidationCode } from "./validate-variant";
 const draft = () => JSON.parse(JSON.stringify(firstFlightVariant));
 type Draft = ReturnType<typeof draft>;
 
-// Modfify Draft for Reach Target Test and Eliminate All Cases
+// Adapt the canonical fixture for the alternate Sprint 2 objectives.
 const reachTargetDraft = () => {
   const v = draft();
   v.schemaVersion = 2;
@@ -137,7 +137,6 @@ describe("semantic validation", () => {
     ["TARGET_OUT_OF_BOUNDS", v => {v.objectives[0].targets[0].cells[0] = { file: 6, rank: 0 };}, ["objectives", 0, "targets", 0, "cells", 0]],
     ["TARGET_DISABLED", v => {const cell = v.objectives[0].targets[0].cells[0];v.board.disabledCells.push({ ...cell });}, ["objectives", 0, "targets", 0, "cells", 0]],
     ["DUPLICATE_TARGET_CELL", v => {const cell = v.objectives[0].targets[0].cells[0];v.objectives[0].targets[0].cells.push({ ...cell });}, ["objectives", 0, "targets", 0, "cells", 1]],
-    ["DUPLICATE_TARGET_CELL", v => {v.objectives[0].targets[1].cells[0] = { ...v.objectives[0].targets[0].cells[0] };}, ["objectives", 0, "targets", 1, "cells", 0]],
     ["UNKNOWN_TARGET_PLAYER", v => {v.objectives[0].targets[0].playerId = "unknown";}, ["objectives", 0, "targets", 0, "playerId"]],
     ["DUPLICATE_TARGET_PLAYER", v => {v.objectives[0].targets[1].playerId = v.objectives[0].targets[0].playerId;}, ["objectives", 0, "targets", 1, "playerId"]],
     ["NO_TARGET", v => {v.objectives[0].targets[1].playerId = v.objectives[0].targets[0].playerId;}, ["players", 1]],
@@ -164,7 +163,7 @@ describe("semantic validation", () => {
   it("reports independent reach-target issues deterministically without modifying the draft", () => {
     const v = reachTargetDraft();
     v.objectives[0].targets[1].playerId = v.objectives[0].targets[0].playerId;
-    v.objectives[0].targets[1].cells[0] = { ...v.objectives[0].targets[0].cells[0] };
+    v.objectives[0].targets[1].cells.push({ ...v.objectives[0].targets[1].cells[0] });
     const typeId = v.pieceTypes[0].id;
     v.objectives[0].targets[1].eligiblePieceTypeIds = [typeId, typeId];
     const before = JSON.stringify(v);
@@ -182,7 +181,7 @@ describe("semantic validation", () => {
     ]);
   });
 
-  it("accepts every distinct pair of empty target cells on the canonical board", () => {
+  it("accepts every pair of empty target cells, including a target shared by both players", () => {
     const base = reachTargetDraft();
     const emptyCells = Array.from({ length: base.board.files * base.board.ranks }, (_, index) => ({
       file: index % base.board.files,
@@ -192,7 +191,6 @@ describe("semantic validation", () => {
 
     for (const whiteTarget of emptyCells) {
       for (const blackTarget of emptyCells) {
-        if (whiteTarget.file === blackTarget.file && whiteTarget.rank === blackTarget.rank) continue;
         const candidate = structuredClone(base);
         candidate.objectives[0].targets[0].cells = [whiteTarget];
         candidate.objectives[0].targets[1].cells = [blackTarget];

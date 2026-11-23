@@ -275,7 +275,7 @@ describe("rejected inputs", () => {
     expect(result.issues.every(({ severity }) => severity === "error")).toBe(true);
   });
 
-  it("rejects imported reach-target definitions with conflicting ownership and cells", () => {
+  it("rejects imported reach-target definitions with conflicting ownership and duplicate cells", () => {
     const objective = longWalkVariant.objectives[0];
     if (objective.type !== "reach-target") throw new Error("Expected reach-target fixture");
     const broken: VariantDefinition = {
@@ -288,7 +288,10 @@ describe("rejected inputs", () => {
           {
             ...objective.targets[1]!,
             playerId: objective.targets[0]!.playerId,
-            cells: [{ ...objective.targets[0]!.cells[0]! }],
+            cells: [
+              { ...objective.targets[1]!.cells[0]! },
+              { ...objective.targets[1]!.cells[0]! },
+            ],
           },
         ],
       }],
