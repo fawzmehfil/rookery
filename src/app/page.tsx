@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import rookeryLogo from "../../assets/rookery.png";
+import rookeryLogo from "./icon.png";
 
 const board = [
   ["♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"],
@@ -161,7 +161,7 @@ export default function Home() {
             <p className="section-label">The creative loop</p>
             <h2>Built for tinkering.</h2>
           </div>
-          <p>Move from a sketch to a playable link without code, installs, or rulebook archaeology.</p>
+          <p>Move from a sketch to a playable variant without code, installs, or rulebook archaeology.</p>
         </div>
 
         <div className="foundation-grid">

@@ -5,9 +5,12 @@ Rookery is at an early stage. Small changes with an explicit product or technica
 ## Local workflow
 
 1. Use Node.js 22 (`nvm use` if you use nvm).
-2. Install dependencies with `npm install`.
+2. Install the locked dependencies with `npm ci`. Use `npm install` only when
+   intentionally changing dependencies and commit the resulting lockfile.
 3. Create a branch from `main`.
-4. Run `npm run check` before opening a pull request.
+4. Run `npm run verify` before opening a pull request.
+5. Install the supported Playwright browsers once with
+   `npm run test:e2e:install`, then run `npm run test:e2e`.
 
 ## Engineering principles
 

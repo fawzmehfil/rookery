@@ -13,7 +13,7 @@ import {
 import { BoardSurface, type BoardMove, type SquareActivation } from "@/components/board-surface";
 import { variantBoardPieces } from "@/features/variant-board/board-adapter";
 import { SessionPieceArt } from "@/features/piece-library/appearance";
-import rookeryLogo from "../../../assets/rookery.png";
+import rookeryLogo from "../../app/icon.png";
 import {
   resetLocalSession,
   submitLocalAction,
