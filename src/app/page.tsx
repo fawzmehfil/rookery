@@ -26,13 +26,13 @@ const foundations = [
   },
   {
     number: "03",
-    title: "Write the objective",
-    description: "Checkmate a king, hold territory, escort a piece, or define a completely different finish line.",
+    title: "Choose the objective",
+    description: "Capture a royal, reach target cells, or win by eliminating the opposing army.",
   },
   {
     number: "04",
-    title: "Play and remix",
-    description: "Test instantly, invite a friend, then publish a version the community can discover and build upon.",
+    title: "Test and iterate",
+    description: "Validate the draft, play it immediately, then export a portable version to keep refining.",
   },
 ];
 
@@ -76,7 +76,7 @@ export default function Home() {
             <a className="button button-primary" href="#create">See the vision <span>→</span></a>
             <a className="button button-quiet" href="/api/health">System status <span className="status-dot" /></a>
           </div>
-          <p className="build-note">Foundation build · Editor available locally</p>
+          <p className="build-note">Sprint 2 demo · Editor and playtest live</p>
         </div>
 
         <div className="workbench" aria-label="Preview of the Rookery variant editor">
@@ -187,7 +187,7 @@ export default function Home() {
           <h2>The board is only<br />the beginning.</h2>
         </div>
         <div className="closing-copy">
-          <p>This first build establishes the canvas. The next one makes it playable.</p>
+          <p>Create, validate, and playtest a complete variant in one browser workflow.</p>
           <a className="button button-primary" href="https://github.com/fawzmehfil/rookery">Follow the build <span>→</span></a>
         </div>
       </section>

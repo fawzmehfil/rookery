@@ -47,11 +47,11 @@ The client sends an intent such as “move piece A to cell B.” The authoritati
 
 PostgreSQL is the source of truth. Redis should be introduced only when multiple real-time instances need shared room membership, pub/sub, or short-lived presence.
 
-## Suggested delivery slices
+## Delivery slices
 
-1. **Local sandbox:** deterministic move generation and a local editor-to-playtest session.
-2. **Variant editor:** board and piece editing with schema validation; draft persistence and JSON import/export remain follow-up work.
-3. **Publishing:** accounts, immutable versions, share pages, and remix lineage.
+1. **Local sandbox — delivered:** deterministic move generation and a local editor-to-playtest session.
+2. **Variant studio — delivered:** board, piece, movement, and objective editing with schema validation, browser-local persistence, and versioned JSON import/export.
+3. **Publishing — next:** accounts, server-backed drafts, immutable versions, share pages, and remix lineage.
 4. **Online games:** authoritative rooms, clocks, reconnects, and history.
 5. **Community and simulation:** search, moderation, featured variants, bots, and balance tooling.
 

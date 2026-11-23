@@ -119,7 +119,7 @@ library, objective editing, refresh recovery).
 
 | Defect | Owner | Status |
 | --- | --- | --- |
-| Hosted preview served an older build than `main` (no autosave, export, or import controls). | Deployment (Vercel project owner) | Closed. The stable production deployment now tracks integrated `main`; Vercel reported `ecce9bf` ready on 2026-11-23. |
+| Hosted preview served an older build than `main` (no autosave, export, or import controls). | Deployment (Vercel project owner) | Closed. The stable production deployment now tracks integrated `main`; Vercel reported Sprint 2 release-candidate commit `3ba6237` ready on 2026-11-23. |
 | A focused board square painted above the separate piece layer, visually hiding an occupied square's piece. | Board surface (shared component) | Closed in this pull request. The unnecessary focus stacking context was removed and is covered by the keyboard-focus browser test. |
 | Low colour contrast in the successful draft-check message and editor footer. | Variant editor styles | Closed in this pull request. Text colours were darkened and browser-computed WCAG AA checks now cover both surfaces. |
 
