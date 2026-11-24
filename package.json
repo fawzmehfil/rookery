@@ -18,6 +18,9 @@
     "test": "vitest run && npm run test --workspace @rookery/rules",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium firefox",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:smoke": "vitest run --config vitest.database.config.mts",
     "evidence:capture": "node scripts/capture-evidence.mjs",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "audit:production": "npm audit --omit=dev",
@@ -26,10 +29,17 @@
     "verify": "npm run verify:repository && npm run check && npm run audit:production && npm run verify:production && git diff --check"
   },
   "dependencies": {
+    "drizzle-orm": "0.45.4",
     "next": "16.4.6",
+    "postgres": "4.1.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "4.6.7"
+  },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    }
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -40,6 +50,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "drizzle-kit": "0.31.11",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.6",
     "jsdom": "^27.0.1",

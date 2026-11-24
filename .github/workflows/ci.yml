@@ -58,5 +58,24 @@ jobs:
           name: playwright-report
           path: |
             playwright-report/
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: postgres://rookery:rookery_local@127.0.0.1:54329/rookery
+      ROOKERY_DB_TEST_URL: postgres://rookery:rookery_local@127.0.0.1:54329/rookery
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: docker compose up --wait postgres
+      - name: Apply migrations and verify rerun
+        run: |
+          npm run db:migrate
+          npm run db:migrate
+      - run: npm run db:smoke
             test-results/
           retention-days: 7
