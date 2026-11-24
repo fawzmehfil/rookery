@@ -58,6 +58,9 @@ jobs:
           name: playwright-report
           path: |
             playwright-report/
+            test-results/
+          retention-days: 7
+
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -77,5 +80,3 @@ jobs:
           npm run db:migrate
           npm run db:migrate
       - run: npm run db:smoke
-            test-results/
-          retention-days: 7
