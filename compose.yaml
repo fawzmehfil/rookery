@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:18.3
+    profiles: ["database"]
+    ports:
+      - "127.0.0.1:54329:5432"
+    environment:
+      POSTGRES_DB: rookery
+      POSTGRES_USER: rookery
+      POSTGRES_PASSWORD: rookery_local
+    volumes:
+      - rookery-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "rookery", "-d", "rookery"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
   web:
     build:
       context: .
@@ -15,3 +31,6 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+volumes:
+  rookery-postgres:
